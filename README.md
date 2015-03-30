@@ -9,5 +9,5 @@ The data is assembled by [Sirion Vittayakorn](www.cs.unc.edu/~sirionv/).
         - lib
         - metadata
 
-The content are categorized by the type of the room, e.g. bedroom, home-office, or kitchen.
+The content is categorized by the type of the room, e.g. bedroom, home-office, or kitchen.
 
