@@ -39,7 +39,7 @@ class Houzz:
         """
         py_mat = scipy.io.loadmat(filename, squeeze_me=True,
                                   struct_as_record=False)
-        py_data = py_mat.data
+        py_data = py_mat['data']
         attributes = dir(py_data)
 
         data = dict()
