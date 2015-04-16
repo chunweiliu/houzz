@@ -11,9 +11,12 @@ class Houzz:
     def __init__(self, base_folder, category):
         self.base_folder = base_folder
 
-        self.image_folder = base_folder + 'images/' + category
+        self.image_folder = base_folder + 'images/' + category + '/'
         self.keys_files = base_folder + 'keys/' + category + '.mat'
-        self.data_folder = base_folder + 'metadata/' + category
+        self.data_folder = base_folder + 'metadata/' + category + '/'
+
+        data = self.loadmat(self.data_folder + 'data_03413022.mat')
+        print data['image_link']
 
     def loadmat(self, filename):
         """An example of the Matlab format of the Houzz dataset
@@ -28,6 +31,7 @@ class Houzz:
          recommend: {1x6 cell}
         """
         py_mat = scipy.io.loadmat(filename)
+
         data = dict()
         data['url'] = py_mat['data']['url'][0][0][0]
         data['id'] = py_mat['data']['id'][0][0][0][0]
