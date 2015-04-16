@@ -4,16 +4,24 @@ import scipy.io
 class Houzz:
     """A class for processing the Houzz.com dataset:
     Houzz
-    - images
-    - keys
-    - metadata
+        - images
+        - keys
+        - metadata
+
+    A single instance of this class represents the entire dataset.
+    The 'loadmat()' method creates a Python dictionary
+    for a single metadata file.
     """
     def __init__(self, base_folder, category):
-        self.base_folder = base_folder
+        # Assume Unix-style pathnames
+        # Remove trailing '/' from 'base_folder,' if present, to regularize input
+        base_folder = base_folder.rstrip('/')
 
-        self.image_folder = base_folder + 'images/' + category
-        self.keys_files = base_folder + 'keys/' + category + '.mat'
-        self.data_folder = base_folder + 'metadata/' + category
+        # Set instance variables
+        self.base_folder = base_folder
+        self.image_folder = base_folder + '/images/' + category
+        self.keys_files = base_folder + '/keys/' + category + '.mat'
+        self.data_folder = base_folder + '/metadata/' + category
 
     def loadmat(self, filename):
         """An example of the Matlab format of the Houzz dataset
