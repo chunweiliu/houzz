@@ -1,8 +1,9 @@
 # houzz
-A demo program for the data from [houzz.com](http://www.houzz.com/)
+A demo program for the data from [houzz.com](https://www.houzz.com/)
 
 ##Data
-The data is assembled by [Sirion Vittayakorn](www.cs.unc.edu/~sirionv/).
+The data is assembled by [Sirion Vittayakorn](https://www.cs.unc.edu/~sirionv/).
+
     Houzz
         - images
         - keys
