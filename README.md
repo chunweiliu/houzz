@@ -12,3 +12,6 @@ The data is assembled by [Sirion Vittayakorn](https://www.cs.unc.edu/~sirionv/).
 
 The content is categorized by the type of the room, e.g. bedroom, home-office, or kitchen.
 
+
+##Installation
+In __init__.py, set DATASET_ROOT to where your dataset is located.

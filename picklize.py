@@ -21,7 +21,7 @@ from houzz import Houzz, DATASET_ROOT
 
 
 # Create Houzz object for the dataset
-dataset = Houzz(DATASET_ROOT, "bedroom")
+dataset = Houzz()
 
 # 'mat' and 'pkl' directories for metadata
 mat_data_dir = dataset.data_folder + "/mat/"

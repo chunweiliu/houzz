@@ -65,19 +65,18 @@ class Houzz:
 
     def loadmat(self, filename):
         """An example of the Matlab format of the Houzz dataset (data_02101038)
-        data =
-            url: [1x83 char]
-             id: 2101038
-     image_link: [1x74 char]
-    description: [1x134 char]
-          style: 'contemporary'
-           type: 'bedroom'
-            tag: {'built-in-desk'  'guest-room-retreat'  'vaulted-ceilings'}
-       sameproj: {[1x77 char]  [1x83 char]  [1x87 char]}
-      recommend: {1x6 cell}
+             data =
+                 url: [1x83 char]
+                  id: 2101038
+          image_link: [1x74 char]
+         description: [1x134 char]
+               style: 'contemporary'
+                type: 'bedroom'
+                 tag: {'built-in-desk'  'guest-room-retreat'  'vaulted-ceilings'}
+            sameproj: {[1x77 char]  [1x83 char]  [1x87 char]}
+           recommend: {1x6 cell}
         """
-        filename = self.check_path(filename)  # append the root if needs
-        format_print(filename)
+        filename = self.check_path(filename)  # append the root if needed
 
         py_mat = scipy.io.loadmat(filename, squeeze_me=True,
                                   struct_as_record=False)
@@ -109,7 +108,7 @@ class Houzz:
         metadata = self.loadmat(filename)
 
         if not metadata['tag'] and not metadata['description']:
-            format_print('No textural feature found')
+            format_print('No textual feature found')
             return None
 
         if metadata['tag']:
@@ -172,11 +171,11 @@ class Houzz:
         @ returns
             a processed filename
         """
-        tokens = filename.split('/')
-        if tokens[0] != '':
+        if filename[0] == '/':
+            return filename
+        else: 
             # need to append the root folder
             return self.mat_data_folder + '/' + filename
-        return filename
 
 
 """
@@ -193,10 +192,21 @@ in this module.
 """
 import os
 data_file = "bedroom.txt"
-"""
+
 if data_file not in os.listdir('.'):
     # Generate this file
-    dataset = Houzz('
+    dataset = Houzz()
+    with open(data_file, 'w') as fd:
+        for mat in os.listdir(dataset.mat_data_folder):
+            data = dataset.loadmat(mat)
+            # Check if it has a label we want 
+            if data['style'] in LABELS and (data['tag'] or data['description']):
+                # Write a line with 
+                #   <name>.jpg <label number> 
+                # to the file
+                jpg = mat.rstrip('.mat') + '.jpg'
+                label = LABELS.index(data['style'])
+                fd.write(jpg + ' ' + str(label) + '\n')
 
 
-def dataset_dict():"""
+#def dataset_dict():
