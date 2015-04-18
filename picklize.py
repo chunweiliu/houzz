@@ -18,7 +18,7 @@ import os
 import cPickle as pickle
 from Houzz import Houzz
 
-DATASET_ROOT = "/home/brian/LanguageVision/final_project/dataset/"
+DATASET_ROOT = "/home/chunwei/Data/houzz/"
 
 # Create Houzz object for the dataset
 dataset = Houzz(DATASET_ROOT, "bedroom")
