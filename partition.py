@@ -5,8 +5,7 @@ Script to partition the dataset into training and test sets.
 import os
 import cPickle as pickle
 
-# Change this if running on a different machine (end with '/')
-DATASET_ROOT = '/home/brian/LanguageVision/final_project/dataset/'
+from houzz import DATASET_ROOT
 
 # Get a list of filenames for pickled metadata
 PICKLED_PATH = DATASET_ROOT + 'metadata/bedroom/pkl/'
@@ -16,24 +15,22 @@ pickles.remove('successes.pkl')
 pickles.remove('failures.pkl')
 
 """
-Count how many files have tags and descriptions.
+Keep images with text data (description or tag).
 """
-with_tags  = set()
-with_descr = set()
+
+keep = []
 
 for pkl in pickles:
     with open(PICKLED_PATH + pkl) as fd:
         data = pickle.load(fd)  # a dictionary 
-        if data['tag']:
-            with_tags.add(pkl)
-        if data['description']:
-            with_descr.add(pkl)
-
+        if data['tag'] or data['description']:
+            keep.append(pkl.rstrip('.pkl'))
+            # We'll use this name to find the corresponding image
 
 """
-Results
+Go through the images and text data for the items we have kept
+and load their features.
+
+Precondition: feature representations have been computed for images
+and text.
 """
-print "Number with tags: {}".format(len(with_tags))
-print "Number with descriptions: {}".format(len(with_descr))
-print "Number with both: {}".format(len(with_tags.intersection(with_descr)))
-print "Number with neither: {}".format(len(pickles) - len(with_tags.union(with_descr)))

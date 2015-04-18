@@ -6,6 +6,10 @@ from nltk.corpus import stopwords
 
 from format_print import format_print
 
+# Installation: set this to the correct path
+# End with trailing '/'
+DATASET_ROOT = '/home/brian/LanguageVision/final_project/dataset/'
+
 # List of labels in our closed world
 LABELS = ["traditional", 
           "contemporary", 
@@ -15,7 +19,6 @@ LABELS = ["traditional",
           "tropical",
           "asian"
          ]
-
 
 class Houzz:
     """A class for processing the Houzz.com dataset:
@@ -33,7 +36,8 @@ class Houzz:
     # Define class constants
     N_TEXT_FEATURE = 300
 
-    def __init__(self, base_folder=[], category=[], text_model_file=[]):
+    def __init__(self, base_folder=DATASET_ROOT, category='bedroom', 
+                 text_model_file='GoogleNews-vectors-negative300.bin'):
         """ Assume Unix-style pathnames
         Remove trailing '/' from 'base_folder,' if present, to regularize input
         """
@@ -83,21 +87,17 @@ class Houzz:
         data = dict()
 
         # for string array in matlab
-        data['url'] = py_data.url if 'url' in attributes else None
-        data['id'] = py_data.id if 'id' in attributes else None
-        data['image_link'] = py_data.image_link \
-            if 'image_link' in attributes else None
-        data['description'] = py_data.description \
-            if 'description' in attributes else None
-        data['style'] = py_data.style if 'style' in attributes else None
-        data['type'] = py_data.type if 'type' in attributes else None
+        data['url'] = py_data.url                          if 'url' in attributes else None
+        data['id'] = py_data.id                            if 'id' in attributes else None
+        data['image_link'] = py_data.image_link            if 'image_link' in attributes else None
+        data['description'] = py_data.description          if 'description' in attributes else None
+        data['style'] = py_data.style                      if 'style' in attributes else None
+        data['type'] = py_data.type                        if 'type' in attributes else None
 
         # for cell array in Matlab
-        data['tag'] = [x for x in py_data.tag] if 'tag' in attributes else None
-        data['sameproj'] = [x for x in py_data.sameproj] \
-            if 'sameproj' in attributes else None
-        data['recommend'] = [x for x in py_data.recommend] \
-            if 'recommend' in attributes else None
+        data['tag'] = [x for x in py_data.tag]             if 'tag' in attributes else None
+        data['sameproj'] = [x for x in py_data.sameproj]   if 'sameproj' in attributes else None
+        data['recommend'] = [x for x in py_data.recommend] if 'recommend' in attributes else None
         return data
 
     def compute_text_feature(self, filename):
@@ -177,3 +177,26 @@ class Houzz:
             # need to append the root folder
             return self.mat_data_folder + '/' + filename
         return filename
+
+
+"""
+We have made a closed world assumption that there are only seven
+possible style labels (see the LABELS list in this module)
+because many labels only appear one or two times
+or are not actual style descriptions.
+
+We want a list of only those items that we will use for our task,
+along with their label numbers. This file will be in the format
+expected by Caffe. When we need to use it in Python,
+we will parse it into a dictionary using the dataset_dict() function
+in this module.
+"""
+import os
+data_file = "bedroom.txt"
+"""
+if data_file not in os.listdir('.'):
+    # Generate this file
+    dataset = Houzz('
+
+
+def dataset_dict():"""
