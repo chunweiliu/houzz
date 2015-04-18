@@ -1,25 +1,24 @@
 """
-Part 3: Training Classifiers
-
-Train a binary SVM classifier for each attribute.
-Use the RBF kernel and 5-fold cross validation.
+Subroutines for training the SVM.
 """
 
 from random import randint
 import sys
 from svmutil import *
 
-"""
-Performs cross-validation on a 70-30 split of the training data.
 
-Input: 
-    y: list of training labels
-    x: list of training features
-    options: string of LIBSVM options
-Output: 
-    c, gamma parameters
-"""
 def cross_validation(y, x, options):
+    """
+    Performs cross-validation on a 70-30 split of the training data.
+
+    @param 
+        y: list of training labels
+        x: list of training features
+        options: string of LIBSVM options
+    @returns 
+        c, gamma parameters
+    """
+
     # Randomly split data
     x_train, y_train = [], []
     x_hold,  y_hold  = [], []
