@@ -1,0 +1,4 @@
+Number with tags: 51511
+Number with descriptions: 53397
+Number with both: 33461
+Number with neither: 26844
