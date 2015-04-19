@@ -28,9 +28,13 @@ def text_feature(meta_folder, text_model_file, text_folder):
         with open(meta_folder + pkl, 'r') as f:
             metadata = pickle.load(f)
             feature = compute_text_feature(metadata, model)
-
-            filename = pkl.rstrip('.pkl') + '.npy'
-            numpy.save(text_folder + filename, feature)
+            # make a check
+            try:
+                if feature.any() is not False:
+                    npy = pkl.rstrip('.pkl') + '.npy'
+                    numpy.save(text_folder + npy, feature)
+            except AttributeError:
+                pass
 
 
 def compute_text_feature(metadata, model):
