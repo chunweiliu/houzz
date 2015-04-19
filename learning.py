@@ -6,6 +6,7 @@ import houzz
 import random
 import sys
 from svmutil import *
+from features import *
 
 from format_print import format_print
 
@@ -114,7 +115,7 @@ def flatten(list_of_lists):
     return flat
 
 
-def train_svm(name, training_features, training_labels, img_feature_dir, 
+def train_svm(name, training_labels, img_feature_dir, 
               text_feature_dir=houzz.DATASET_ROOT + 'text_features', 
               output_dir=houzz.TRAINED_PATH):
 	"""
@@ -123,7 +124,6 @@ def train_svm(name, training_features, training_labels, img_feature_dir,
 
 		@param
 			name (str): name of the classifier
-			training_features (dict: str -> ndarray): (filename, feature) pairs
 			training_labels (dict: str -> int): (filename, label) pairs
 			img_feature_dir (str): location of the image features
 			text_feature_dir (str): location of the text features
@@ -134,8 +134,8 @@ def train_svm(name, training_features, training_labels, img_feature_dir,
 	"""
 	# LIBSVM expects features and labels in separate lists
 	x, y = [], []
-	for stem in training_features.keys():
-		x.append(training_features[stem])
+	for stem in training_labels.keys():
+		x.append(feature(stem, img_feature_dir))
 		y.append(training_labels[stem])
 
 	c, gamma = cross_validation(y, x)

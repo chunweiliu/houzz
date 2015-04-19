@@ -21,8 +21,8 @@ def text_feature(meta_folder, text_model_file, text_folder):
     """Precompute all textual features for the files in the meta_folder
     """
 	
-	meta_folder = houzz.standardize(meta_folder)
-	text_folder = houzz.standardize(text_folder)
+    meta_folder = houzz.standardize(meta_folder)
+    text_folder = houzz.standardize(text_folder)
 
     # Load the langauge model
     format_print('Loading the Google News Model ...')
@@ -135,24 +135,24 @@ def image_feature(text_file, lmdb_folder, output_folder):
 
 
 def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
-	"""
-	Preconditions:
-		1) Image features precomputed and stored in img_dir
-		2) Text features precomputed and stored in txt_dir
-	@param
-		filename (str): data_xxxx
-		img_dir (str): location of image features 
-		txt_dir (str): location of text features 
+    """
+    Preconditions:
+        1) Image features precomputed and stored in img_dir
+        2) Text features precomputed and stored in txt_dir
+    @param
+        filename (str): data_xxxx
+        img_dir (str): location of image features 
+        txt_dir (str): location of text features 
 
-	@returns
-		Combined img + text feature representation
-	"""
-	img_dir = houzz.standardize(img_dir)
-	txt_dir = houzz.standardize(txt_dir)
+    @returns
+        Combined img + text feature representation
+    """
+    img_dir = houzz.standardize(img_dir)
+    txt_dir = houzz.standardize(txt_dir)
 
-	# Load features from .npy files
-	img = np.load(img_dir + filename + '.npy')
-	txt = np.load(txt_dir + filename + '.npy')
-	
-	# Concatenate
-	return np.concatenate( (img.flatten(), txt.flatten()) )
+    # Load features from .npy files
+    img = np.load(img_dir + filename + '.npy')
+    txt = np.load(txt_dir + filename + '.npy')
+
+    # Concatenate
+    return np.concatenate( (img.flatten(), txt.flatten()) )
