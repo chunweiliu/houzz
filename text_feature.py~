@@ -14,7 +14,10 @@ def text_feature(meta_folder, text_model_file, text_folder):
     """
 	
 	meta_folder = houzz.standardize(meta_folder)
-	text_folder = houzz.standardize(text_folder)
+    if meta_folder[-1] != '/':
+        meta_folder += '/'
+    if text_folder[-1] != '/':
+        text_folder += '/'
 
     # Load the langauge model
     format_print('Loading the Google News Model ...')

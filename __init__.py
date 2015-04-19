@@ -1,5 +1,5 @@
 import scipy.io
-
+import numpy as np
 import gensim
 
 from format_print import format_print
@@ -121,17 +121,36 @@ class Houzz:
             return self.mat_data_folder + '/' + filename
 
 
-"""
-We have made a closed world assumption that there are only seven
-possible style labels (see the LABELS list in this module)
-because many labels only appear one or two times
-or are not actual style descriptions.
+def partition(file_list='bedroom.txt'):
+    """
+    Partitions the dataset into training and test sets.
 
-We want a list of only those items that we will use for our task,
+    @param file_list
+        a text file in the format expected by Caffe.
+        <xxxx.jpg> <int>
+    """
+    TEST_FRACTION = 10  # 1 / TEST_FRACTION for test set
+
+    train = dict()
+    test = dict()
+    with open(file_list) as f:
+        for i, line in enumerate(f):
+            filename = line.split()[0].rstrip('.jpg')
+            label = int(line.split()[1])
+            if i % TEST_FRACTION == 0:
+                test[filename] = label
+            else:
+                train[filename] = label
+    return (train, test)
+
+
+"""
+When this module is loaded, ensure that 'bedroom.txt' is
+in the current directory.
+
+bedroom.txt is a list of only those items that we will use for our task,
 along with their label numbers. This file will be in the format
-expected by Caffe. When we need to use it in Python,
-we will parse it into a dictionary using the dataset_dict() function
-in this module.
+expected by Caffe.
 """
 import os
 data_file = "bedroom.txt"
@@ -151,5 +170,3 @@ if data_file not in os.listdir('.'):
                 label = LABELS.index(data['style'])
                 fd.write(jpg + ' ' + str(label) + '\n')
 
-
-#def dataset_dict():

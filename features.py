@@ -1,12 +1,20 @@
+"""
+Subroutines for working with the various feature representations.
+"""
+
 import os
 import cPickle as pickle
-import numpy
+import numpy as np
 
 import gensim
 from nltk.corpus import stopwords
 
 from format_print import format_print
 import houzz
+
+import caffe
+from caffe.proto import caffe_pb2
+import lmdb
 
 
 def text_feature(meta_folder, text_model_file, text_folder):
@@ -30,7 +38,7 @@ def text_feature(meta_folder, text_model_file, text_folder):
             try:
                 if feature.any() is not False:
                     npy = pkl.rstrip('.pkl') + '.npy'
-                    numpy.save(text_folder + npy, feature)
+                    np.save(text_folder + npy, feature)
             except AttributeError:
                 pass
 
@@ -46,17 +54,17 @@ def compute_text_feature(metadata, model):
         format_print('No textual feature found')
         return None
 
-    tag_feature = numpy.zeros(300, dtype=numpy.float32)
+    tag_feature = np.zeros(300, dtype=np.float32)
     if metadata['tag']:
         tag_feature += average_text_vector(metadata['tag'], model)
 
-    des_feature = numpy.zeros(300, dtype=numpy.float32)
+    des_feature = np.zeros(300, dtype=np.float32)
     if metadata['description']:
         des_feature += average_text_vector(
             metadata['description'].split(), model)
 
     feature = tag_feature + des_feature  # merge two with equal weights
-    norm = numpy.linalg.norm(feature)
+    norm = np.linalg.norm(feature)
     return feature / norm if norm else feature
 
 
@@ -93,12 +101,58 @@ def average_text_vector(words, model):
     @returns
         a normalized vector
     """
-    feature = numpy.zeros(300, dtype=numpy.float32)
+    feature = np.zeros(300, dtype=np.float32)
     for word in words:
         processed_words = process_text(word)
         for processed_word in processed_words:
             if processed_word in model:
                 feature += model[processed_word]
     # return a normalized feature
-    norm = numpy.linalg.norm(feature)
+    norm = np.linalg.norm(feature)
     return feature / norm if norm else feature
+
+
+def image_feature(text_file, lmdb_folder, output_folder):
+    """Parse the file names and labels in the text_file, search for the
+    corresponding features in the lmdb database, write an individual file
+    for each record in the output_folder
+    """
+    lmdb_env = lmdb.open(lmdb_folder)
+    lmdb_txn = lmdb_env.begin()
+    lmdb_cursor = lmdb_txn.cursor()
+    datum = caffe_pb2.Datum()
+
+    with open(text_file, 'r') as f:
+
+        for key, value in lmdb_cursor:
+            datum.ParseFromString(value)
+
+            # label = datum.label
+            data = caffe.io.datum_to_array(datum)
+            filename = f.readline().split()[0]
+            output_file = output_folder + filename.rstrip('.jpg') + '.npy'
+            np.save(output_file, data)
+
+
+def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
+	"""
+	Preconditions:
+		1) Image features precomputed and stored in img_dir
+		2) Text features precomputed and stored in txt_dir
+	@param
+		filename (str): data_xxxx
+		img_dir (str): location of image features 
+		txt_dir (str): location of text features 
+
+	@returns
+		Combined img + text feature representation
+	"""
+	img_dir = houzz.standardize(img_dir)
+	txt_dir = houzz.standardize(txt_dir)
+
+	# Load features from .npy files
+	img = np.load(img_dir + filename + '.npy')
+	txt = np.load(txt_dir + filename + '.npy')
+	
+	# Concatenate
+	return np.concatenate( (img.flatten(), txt.flatten()) )
