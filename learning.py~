@@ -10,7 +10,7 @@ from svmutil import *
 from format_print import format_print
 
 
-def cross_validation(y, x, k=5):
+def cross_validation(y, x, options, k=5):
     """
     Performs k-fold cross-validation.
 

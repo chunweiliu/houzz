@@ -47,6 +47,9 @@ class Houzz:
 
     def __init__(self, base_folder=DATASET_ROOT, category='bedroom',
                  text_model_file='GoogleNews-vectors-negative300.bin'):
+        """ Assume Unix-style pathnames
+        Remove trailing '/' from 'base_folder,' if present, to regularize input
+        """
         base_folder = standardize(base_folder)
 
         # Set instance variables for paths

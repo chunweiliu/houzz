@@ -45,6 +45,6 @@ def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
 	txt = np.load(txt_dir + filename + '.npy')
 	
 	# Concatenate
-	return np.concatenate( (img.flatten(), txt.flatten()) )
+	return np.concatenate((img.flatten(), txt.flatten()))
 			
 			
