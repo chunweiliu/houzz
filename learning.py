@@ -43,7 +43,7 @@ def cross_validation(y, x, k=5):
         for i in xrange(k):
 
             format_print("Cross-validating with held-out set {0}, "
-                         "c = {1}, gamma = {2}.".format(k, c, gamma))
+                         "c = {1}, gamma = {2}.".format(i, c, gamma))
 
             x_hold = x_split[i]
             y_hold = y_split[i]
