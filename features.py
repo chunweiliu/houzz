@@ -3,6 +3,7 @@ Subroutines for working with the various feature representations.
 """
 
 import os
+import string
 import cPickle as pickle
 import numpy as np
 
@@ -19,7 +20,7 @@ import lmdb
 
 def text_feature(meta_folder, text_model_file, text_folder):
     """Precompute all textual features for the files in the meta_folder."""
-	
+
     meta_folder = houzz.standardize(meta_folder)
     text_folder = houzz.standardize(text_folder)
 
@@ -43,9 +44,11 @@ def text_feature(meta_folder, text_model_file, text_folder):
 
 
 def compute_text_feature(metadata, model):
-    """Compute a mean vector to represent the description and tags.
+    """Compute an unified vector to represent the description and tags.
+    Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
+
     @return normed feature vector
     """
 
@@ -53,20 +56,36 @@ def compute_text_feature(metadata, model):
         format_print('No textual feature found')
         return None
 
-    tag_feature = np.zeros(300, dtype=np.float32)
+    word_list = []
     if metadata['tag']:
-        tag_feature += average_text_vector(metadata['tag'], model)
-        # metadata['tag'] is a list of strings
-
-    des_feature = np.zeros(300, dtype=np.float32)
+        for tag in metadata['tag']:
+            word_list += process_text(tag)
     if metadata['description']:
-        des_feature += average_text_vector(
-            metadata['description'].split(), model)
-            # metadata['description'] is a string
+        for word in metadata['description'].split():
+            word_list += process_text(word)
 
-    feature = tag_feature + des_feature  # merge two with equal weights
-    norm = np.linalg.norm(feature)
-    return feature / norm if norm else feature
+    # Combine the word2vec for each individual word
+    text_vector = np.zeros(300, dtype=np.float32)
+    text_count = 0
+    for word in word_list:
+        if word in model:
+            text_vector += model[word]
+            text_count += 1
+
+    text_vector = text_vector / text_count if text_count else text_vector
+    return scale(text_vector)
+
+
+def scale(vector):
+    """
+    Map each element in the feature to the range [-1, 1].
+
+    @param vector (ndarray)
+    @returns (ndarray) scaled feature
+    """
+    # Divide by the element with the largest absolute value
+    normalizer = max(abs(vector.max()), abs(vector.min()))
+    return vector / normalizer if normalizer else vector
 
 
 def process_text(text):
@@ -82,33 +101,19 @@ def process_text(text):
     Without a special corpus of interior design terms to train the
     language model on, this seems like the best we can do.
 
-    @param text: may contain hyphens if a tag
-    @return a list of processed strings with hyphens and stop words removed
+    @param text (str): a "word" (may contain punctuation)
+    @return a list of processed strings with punctuation and stop words removed
     """
+
+    # Words to omit
     stop_list = stopwords.words('english')
     omit = set(stop_list).union(set(houzz.LABELS))  # words we don't use
 
-    return [word for word in text.split('-') if word not in omit]
+    # Replace punctuation by ' '
+    for p in string.punctuation:
+        text = text.replace(p, ' ')
 
-
-def average_text_vector(words, model):
-    """
-    Compute a feature vector for one term. If the term is a phrase joined
-    by hyphens, the function splits it into words and averages the individual
-    word vectors.
-
-    @param words: a list of (possibly hyphenated) words
-    @return a normalized vector
-    """
-    feature = np.zeros(300, dtype=np.float32)
-    for word in words:
-        processed_words = process_text(word)
-        for processed_word in processed_words:
-            if processed_word in model:
-                feature += model[processed_word]
-    # return a normalized feature
-    norm = np.linalg.norm(feature)
-    return feature / norm if norm else feature
+    return [word.lower() for word in text.split() if word not in omit]
 
 
 def image_feature(text_file, lmdb_folder, output_folder):
@@ -126,10 +131,12 @@ def image_feature(text_file, lmdb_folder, output_folder):
         for key, value in lmdb_cursor:
             datum.ParseFromString(value)
 
-            # label = datum.label
-            data = caffe.io.datum_to_array(datum)
+            # Load the extracted feature and scale to [-1, 1]
+            data = scale(caffe.io.datum_to_array(datum))
+            # Filename with .npy extension
             filename = f.readline().split()[0]
             output_file = output_folder + filename.rstrip('.jpg') + '.npy'
+
             np.save(output_file, data)
 
 
@@ -140,12 +147,12 @@ def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
     Preconditions:
         1) Image features precomputed and stored in img_dir
         2) Text features precomputed and stored in txt_dir
-    
-    @param filename (str): data_xxxx
-    @param img_dir (str): location of image features 
-    @param txt_dir (str): location of text features 
 
-    @return (ndarray) combined img + text feature representation
+    @param filename (str): data_xxxx
+    @param img_dir (str): location of image features
+    @param txt_dir (str): location of text features
+
+    @return (list) combined img + text feature representation
     """
     img_dir = houzz.standardize(img_dir)
     txt_dir = houzz.standardize(txt_dir)
@@ -155,4 +162,4 @@ def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
     txt = np.load(txt_dir + filename + '.npy')
 
     # Concatenate
-    return np.concatenate( (img.flatten(), txt.flatten()) )
+    return np.concatenate((img.flatten(), txt.flatten())).tolist()

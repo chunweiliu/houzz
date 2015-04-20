@@ -14,7 +14,7 @@ from format_print import format_print
 def cross_validation(y, x, k=5):
     """
     Perform k-fold cross-validation.
- 
+
     @param y: list of training labels
     @param x: list of training features
     @param options: string of LIBSVM options
@@ -22,11 +22,11 @@ def cross_validation(y, x, k=5):
     @return best c
     @return best gamma
     """
-    
+
     format_print("Beginning cross-validation:")
-    x_split, y_split = split_data(x, y, k) 
+    x_split, y_split = split_data(x, y, k)
     format_print("Finished spliting data.")
-    
+
     """
     Grid search for best c, gamma
     For each c, gamma pair in the grid, try each possible held-out split.
@@ -35,46 +35,45 @@ def cross_validation(y, x, k=5):
 
     # Recommended grids from LIBSVM guide
     c_grid     = [2**x for x in xrange(-5, 15, 2)]
-    gamma_grid = [2**x for x in xrange(-15, 3, 2)] 
-    
+    gamma_grid = [2**x for x in xrange(-15, 3, 2)]
+
     best_accuracy = 0.0
     for c, gamma in zip(c_grid, gamma_grid):
         avg_accuracy = 0.0
         for i in xrange(k):
-        
+
             format_print("Cross-validating with held-out set {0}, "
                          "c = {1}, gamma = {2}.".format(k, c, gamma))
 
             x_hold = x_split[i]
             y_hold = y_split[i]
-            
+
             x_train = flatten([split for split in x_split if split is not x_hold])
             y_train = flatten([split for split in y_split if split is not y_hold])
 
             # LIBSVM options:
             # -c <cost  parameter>
             # -g <gamma parameter>
-			# -q suppress output            
+            # -q suppress output
             options = "-c {0} -g {1} -q".format(c, gamma)
             model = svm_train(y_train, x_train, options)
             predicted_labels, _, _ = svm_predict(y_hold, x_hold, model)
-            
+
             # compute number of incorrect labels
             num_wrong = 0
             for i, label in enumerate(y_hold):
                 if label != predicted_labels[i]:
                     num_wrong += 1
-        
+
             avg_accuracy += num_wrong  # keep a running total
 
         avg_accuracy /= k  # avg_accuracy is type float
 
         if avg_accuracy > best_accuracy:
-            best_accuracy = avg_accuracy 
+            best_accuracy = avg_accuracy
             c_best = c
             gamma_best = gamma
 
-        
     format_print(
     """Cross-validation finished!
         c = {0}
@@ -86,7 +85,7 @@ def cross_validation(y, x, k=5):
 
 def split_data(x, y, k):
     # k splits
-    x_split = [[] for i in range(k)]  
+    x_split = [[] for i in range(k)]
     y_split = [[] for i in range(k)]
     # Why not [[]]*k ?
     # It reuses the same reference for [] each time!
@@ -114,12 +113,12 @@ def flatten(list_of_lists):
     return flat
 
 
-def train_svm(name, training_labels, img_feature_dir, 
-              text_feature_dir=houzz.DATASET_ROOT + 'text_features', 
+def train_svm(name, training_labels, img_feature_dir,
+              text_feature_dir=houzz.DATASET_ROOT + 'text_features',
               output_dir=houzz.TRAINED_PATH):
-	"""
-	Train an SVM for each attribute.
-	Use 5-fold cross-validation, RBF Kernel.
+    """
+    Train an SVM for each attribute.
+    Use 5-fold cross-validation, RBF Kernel.
 
     @param name (str): name of the classifier
     @param training_labels (dict: str -> int): (filename, label) pairs
@@ -128,25 +127,25 @@ def train_svm(name, training_labels, img_feature_dir,
     @param output_dir (str): where trained SVMs will be saved
 
     @return None (writes SVM model file to output_dir)
-	"""
-	# LIBSVM expects features and labels in separate lists
-	x, y = [], []
-	for stem in training_labels.keys():
-		x.append(feature(stem, img_feature_dir))
-		y.append(training_labels[stem])
+    """
+    # LIBSVM expects features and labels in separate lists
+    x, y = [], []
+    for stem in training_labels.keys():
+        x.append(feature(stem, img_feature_dir))
+        y.append(training_labels[stem])
 
-	c, gamma = cross_validation(y, x)
-	print("Cross validation complete.") 
-	print("C = {0}, gamma = {1}\n".format(c, gamma))
+    c, gamma = cross_validation(y, x)
+    print("Cross validation complete.")
+    print("C = {0}, gamma = {1}\n".format(c, gamma))
 
-	# Using the values of 'C' and 'gamma' we got from cross-validation,
-	# re-train on the data set.
-	# -b 1 -> use probability estimates
-	# -q   -> suppress output
-	# RBF kernel by default
-	options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
-	model = svm_train(y, x, options)
+    # Using the values of 'C' and 'gamma' we got from cross-validation,
+    # re-train on the data set.
+    # -b 1 -> use probability estimates
+    # -q   -> suppress output
+    # RBF kernel by default
+    options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
+    model = svm_train(y, x, options)
 
-	# Save model for the future
-	model_name =  name + '.model' if not name.endswith('.model') else name
-	svm_save_model(TRAINED_PATH + model_name, model)
+    # Save model for the future
+    model_name = name + '.model' if not name.endswith('.model') else name
+    svm_save_model(TRAINED_PATH + model_name, model)

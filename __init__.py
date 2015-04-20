@@ -1,12 +1,11 @@
 import scipy.io
-import numpy as np
 import gensim
 
 from format_print import format_print
 
 # Installation: set this to the correct path
 # End with trailing '/'
-DATASET_ROOT = '/home/brian/LanguageVision/final_project/dataset/'
+DATASET_ROOT = '/home/chunwei/Data/houzz/'
 # Where the program will look for and save trained SVMs
 TRAINED_PATH = DATASET_ROOT + 'trained_svms'
 
@@ -21,12 +20,12 @@ LABELS = ["traditional",
 
 
 def standardize(path):
-	"""
-	Adds trailing '/' if absent.
-	@param path (str): Unix-style path
-	@return std (str): Unix-style path with trailing '/'
-	"""
-	return path if path[-1] == '/' else path + '/'
+    """
+    Adds trailing '/' if absent.
+    @param path (str): Unix-style path
+    @return std (str): Unix-style path with trailing '/'
+    """
+    return path if path[-1] == '/' else path + '/'
 
 
 class Houzz:
@@ -159,12 +158,12 @@ if data_file not in os.listdir('.'):
     with open(data_file, 'w') as fd:
         for mat in os.listdir(dataset.mat_data_folder):
             data = dataset.loadmat(mat)
-            # Check if it has a label we want 
-            if data['style'] in LABELS and (data['tag'] or data['description']):
-                # Write a line with 
-                #   <name>.jpg <label number> 
+            # Check if it has a label we want
+            if data['style'] in LABELS and \
+               (data['tag'] or data['description']):
+                # Write a line with
+                #   <name>.jpg <label number>
                 # to the file
                 jpg = mat.rstrip('.mat') + '.jpg'
                 label = LABELS.index(data['style'])
                 fd.write(jpg + ' ' + str(label) + '\n')
-
