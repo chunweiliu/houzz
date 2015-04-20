@@ -146,7 +146,7 @@ def train_svm(name, training_labels, img_feature_dir,
 
     # Save model for the future
     model_name = name + '.model' if not name.endswith('.model') else name
-    svm_save_model(TRAINED_PATH + model_name, model)
+    svm_save_model(houzz.TRAINED_PATH + model_name, model)
 
     return model
 
