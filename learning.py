@@ -133,8 +133,8 @@ def train_svm(name, training_labels, img_feature_dir,
     x, y = load_dataset(training_labels, img_feature_dir) 
 
     c, gamma = cross_validation(y, x)
-    print("Cross validation complete.")
-    print("C = {0}, gamma = {1}\n".format(c, gamma))
+    format_print("Cross validation complete.")
+    format_print("C = {0}, gamma = {1}\n".format(c, gamma))
 
     # Using the values of 'C' and 'gamma' we got from cross-validation,
     # re-train on the data set.
@@ -142,11 +142,15 @@ def train_svm(name, training_labels, img_feature_dir,
     # -q   -> suppress output
     # RBF kernel by default
     options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
+    format_print("Training SVM with cross-validation parameters ...")
     model = svm_train(y, x, options)
+    format_print("Training complete.")
 
     # Save model for the future
     model_name = name + '.model' if not name.endswith('.model') else name
+    format_print("Saving model to " + houzz.TRAINED_PATH + model_name + " ...")
     svm_save_model(houzz.TRAINED_PATH + model_name, model)
+    format_print("Done.")
 
     return model
 

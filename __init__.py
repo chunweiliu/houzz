@@ -7,7 +7,7 @@ from format_print import format_print
 # End with trailing '/'
 DATASET_ROOT = '/home/chunwei/Data/houzz/'
 # Where the program will look for and save trained SVMs
-TRAINED_PATH = DATASET_ROOT + 'trained_svms'
+TRAINED_PATH = DATASET_ROOT + 'trained_svms/'
 
 # List of labels in our closed world
 LABELS = ["traditional",
