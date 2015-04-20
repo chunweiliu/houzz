@@ -13,15 +13,14 @@ from format_print import format_print
 
 def cross_validation(y, x, k=5):
     """
-    Performs k-fold cross-validation.
-
-    @param 
-        y: list of training labels
-        x: list of training features
-        options: string of LIBSVM options
-        k: number of sets to split the training data into
-    @returns 
-        c, gamma parameters
+    Perform k-fold cross-validation.
+ 
+    @param y: list of training labels
+    @param x: list of training features
+    @param options: string of LIBSVM options
+    @param k: number of sets to split the training data into
+    @return best c
+    @return best gamma
     """
     
     format_print("Beginning cross-validation:")
@@ -122,15 +121,13 @@ def train_svm(name, training_labels, img_feature_dir,
 	Train an SVM for each attribute.
 	Use 5-fold cross-validation, RBF Kernel.
 
-		@param
-			name (str): name of the classifier
-			training_labels (dict: str -> int): (filename, label) pairs
-			img_feature_dir (str): location of the image features
-			text_feature_dir (str): location of the text features
-			output_dir (str): where trained SVMs will be saved
+    @param name (str): name of the classifier
+    @param training_labels (dict: str -> int): (filename, label) pairs
+    @param img_feature_dir (str): location of the image features
+    @param text_feature_dir (str): location of the text features
+    @param output_dir (str): where trained SVMs will be saved
 
-		@returns
-			None (writes SVM model file to output_dir)
+    @return None (writes SVM model file to output_dir)
 	"""
 	# LIBSVM expects features and labels in separate lists
 	x, y = [], []

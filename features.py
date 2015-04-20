@@ -18,8 +18,7 @@ import lmdb
 
 
 def text_feature(meta_folder, text_model_file, text_folder):
-    """Precompute all textual features for the files in the meta_folder
-    """
+    """Precompute all textual features for the files in the meta_folder."""
 	
     meta_folder = houzz.standardize(meta_folder)
     text_folder = houzz.standardize(text_folder)
@@ -34,7 +33,7 @@ def text_feature(meta_folder, text_model_file, text_folder):
         with open(meta_folder + pkl, 'r') as f:
             metadata = pickle.load(f)
             feature = compute_text_feature(metadata, model)
-            # make a check
+            # Discard empty features
             try:
                 if feature.any() is not False:
                     npy = pkl.rstrip('.pkl') + '.npy'
@@ -44,10 +43,10 @@ def text_feature(meta_folder, text_model_file, text_folder):
 
 
 def compute_text_feature(metadata, model):
-    """Compute a mean vector to represent the words in description and tags
+    """Compute a mean vector to represent the description and tags.
 
-    @param metadata
-        The metadata from self.loadmat
+    @param metadata: a metadata dictionary from Houzz.loadmat
+    @return normed feature vector
     """
 
     if not metadata['tag'] and not metadata['description']:
@@ -57,11 +56,13 @@ def compute_text_feature(metadata, model):
     tag_feature = np.zeros(300, dtype=np.float32)
     if metadata['tag']:
         tag_feature += average_text_vector(metadata['tag'], model)
+        # metadata['tag'] is a list of strings
 
     des_feature = np.zeros(300, dtype=np.float32)
     if metadata['description']:
         des_feature += average_text_vector(
             metadata['description'].split(), model)
+            # metadata['description'] is a string
 
     feature = tag_feature + des_feature  # merge two with equal weights
     norm = np.linalg.norm(feature)
@@ -70,6 +71,8 @@ def compute_text_feature(metadata, model):
 
 def process_text(text):
     """
+    Preprocess the text being handed to word2vec.
+
     Each tag in the dataset is a phrase joined by hyphens. For example,
 
         guest-room-retreat
@@ -79,10 +82,8 @@ def process_text(text):
     Without a special corpus of interior design terms to train the
     language model on, this seems like the best we can do.
 
-    @param text
-        a (possibly hyphenated) tag
-    @returns
-        a list of processed strings with hyphens and stop words removed
+    @param text: may contain hyphens if a tag
+    @return a list of processed strings with hyphens and stop words removed
     """
     stop_list = stopwords.words('english')
     omit = set(stop_list).union(set(houzz.LABELS))  # words we don't use
@@ -93,13 +94,11 @@ def process_text(text):
 def average_text_vector(words, model):
     """
     Compute a feature vector for one term. If the term is a phrase joined
-    by hypehns, the function split it to words and average the individual
-    words as one vector.
+    by hyphens, the function splits it into words and averages the individual
+    word vectors.
 
-    @param words
-        a list of (possibly hyphenated) words
-    @returns
-        a normalized vector
+    @param words: a list of (possibly hyphenated) words
+    @return a normalized vector
     """
     feature = np.zeros(300, dtype=np.float32)
     for word in words:
@@ -136,16 +135,17 @@ def image_feature(text_file, lmdb_folder, output_folder):
 
 def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
     """
+    Compute the combined feature for the data item.
+
     Preconditions:
         1) Image features precomputed and stored in img_dir
         2) Text features precomputed and stored in txt_dir
-    @param
-        filename (str): data_xxxx
-        img_dir (str): location of image features 
-        txt_dir (str): location of text features 
+    
+    @param filename (str): data_xxxx
+    @param img_dir (str): location of image features 
+    @param txt_dir (str): location of text features 
 
-    @returns
-        Combined img + text feature representation
+    @return (ndarray) combined img + text feature representation
     """
     img_dir = houzz.standardize(img_dir)
     txt_dir = houzz.standardize(txt_dir)

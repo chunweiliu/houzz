@@ -19,15 +19,15 @@ LABELS = ["traditional",
           "tropical",
           "asian"]
 
+
 def standardize(path):
 	"""
 	Adds trailing '/' if absent.
-	@params
-		path (str): Unix-style path
-	@returns
-		std (str): Unix-style path with trailing '/'
+	@param path (str): Unix-style path
+	@return std (str): Unix-style path with trailing '/'
 	"""
 	return path if path[-1] == '/' else path + '/'
+
 
 class Houzz:
     """A class for processing the Houzz.com dataset:
@@ -109,10 +109,8 @@ class Houzz:
         """
         Check the filename, prepend or append information if needs
 
-        @ param filename
-            a string
-        @ returns
-            a processed filename
+        @ param filename: a string
+        @ return a processed filename
         """
         if filename[0] == '/':
             return filename
