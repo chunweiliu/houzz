@@ -5,6 +5,7 @@ Subroutines for training the SVM.
 import houzz
 import random
 import sys
+import numpy
 from svmutil import *
 from features import *
 
@@ -126,13 +127,10 @@ def train_svm(name, training_labels, img_feature_dir,
     @param text_feature_dir (str): location of the text features
     @param output_dir (str): where trained SVMs will be saved
 
-    @return None (writes SVM model file to output_dir)
+    @return LIBSVM model (also writes model file to output_dir)
     """
     # LIBSVM expects features and labels in separate lists
-    x, y = [], []
-    for stem in training_labels.keys():
-        x.append(feature(stem, img_feature_dir))
-        y.append(training_labels[stem])
+    x, y = load_dataset(training_labels, img_feature_dir) 
 
     c, gamma = cross_validation(y, x)
     print("Cross validation complete.")
@@ -149,3 +147,62 @@ def train_svm(name, training_labels, img_feature_dir,
     # Save model for the future
     model_name = name + '.model' if not name.endswith('.model') else name
     svm_save_model(TRAINED_PATH + model_name, model)
+
+    return model
+
+
+def load_dataset(names_to_labels, img_feature_dir):
+    """
+    @param names_to_labels (dict: str -> int)
+    @param img_feature_dir (str)
+    @return list of features
+    @return list of labels (same order as list of features)
+    """
+    x, y = [], []
+    for stem in names_to_labels.keys():
+        x.append(feature(stem, img_feature_dir))
+        y.append(names_to_labels[stem])
+    return x, y
+
+
+def test(model, test_labels, img_feature_dir):
+    """
+    @param model: LIBSVM model
+    @param test_labels (dict: str -> int)
+    @param img_feature_dir (str)
+    @return list of predicted labels 
+    @return accuracy
+    """
+    x, y = load_dataset(test_labels, img_feature_dir)
+    labels, stats, _ =  svm_predict(y, x, model, '-q')
+    return labels, stats[0]
+
+
+def confusion(expected, actual, percentages=True):
+    """
+    Generate the confusion matrix for test results.
+
+    @param expected: list of ground-truth labels
+    @param actual: list of predicted labels
+    @param percentages: True  -> table of percentages
+                        False -> table of counts
+    @return numpy array where entry (i, j) is
+            prediction of label j with ground truth i
+    """
+    n = len(houzz.LABELS)
+    mat = numpy.zeros((n, n))
+
+    # Record the counts for each prediction
+    totals = numpy.zeros(n)
+    for e, a in zip(expected, actual):
+        mat[e, a] += 1
+        totals[e] += 1
+
+    # Make entries into percentages
+    if percentages:
+        for e in xrange(n):
+            mat[e] /= (totals[e] if totals[e] else 1) 
+            # Distribution of predictions when truth was e
+    
+    return mat
+
