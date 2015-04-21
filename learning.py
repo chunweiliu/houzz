@@ -1,20 +1,19 @@
 """
 Subroutines for training the SVM.
 """
-
 import houzz
 import random
-import sys
 import numpy
 from svmutil import *
-from features import *
+import collections
 
+from features import *
 from format_print import format_print
 
 
-def cross_validation(y, x, k=5):
+def grid_search(y, x, k=5):
     """
-    Perform k-fold cross-validation.
+    Perform model selection with k-fold cross-validation.
 
     @param y: list of training labels
     @param x: list of training features
@@ -24,9 +23,9 @@ def cross_validation(y, x, k=5):
     @return best gamma
     """
 
-    format_print("Beginning cross-validation:")
-    x_split, y_split = split_data(x, y, k)
-    format_print("Finished spliting data.")
+    # format_print("Beginning cross-validation:")
+    # x_split, y_split = split_data(x, y, k)
+    # format_print("Finished spliting data.")
 
     """
     Grid search for best c, gamma
@@ -35,43 +34,45 @@ def cross_validation(y, x, k=5):
     """
 
     # Recommended grids from LIBSVM guide
-    c_grid     = [2**x for x in xrange(-5, 15, 2)]
-    gamma_grid = [2**x for x in xrange(-15, 3, 2)]
+    c_grid     = [2**i for i in xrange(-5, 15, 2)]
+    gamma_grid = [2**i for i in xrange(-15, 3, 2)]
 
     best_accuracy = 0.0
     for c, gamma in zip(c_grid, gamma_grid):
-        avg_accuracy = 0.0
-        for i in xrange(k):
+        # avg_accuracy = 0.0
+        # for i in xrange(k):
 
-            format_print("Cross-validating with held-out set {0}, "
-                         "c = {1}, gamma = {2}.".format(i, c, gamma))
+        #     format_print("Cross-validating with held-out set {0}, "
+        #                  "c = {1}, gamma = {2}.".format(i, c, gamma))
 
-            x_hold = x_split[i]
-            y_hold = y_split[i]
+        #     x_hold = x_split[i]
+        #     y_hold = y_split[i]
 
-            x_train = flatten([split for split in x_split if split is not x_hold])
-            y_train = flatten([split for split in y_split if split is not y_hold])
+        #     x_train = flatten([split for split in x_split if split is not x_hold])
+        #     y_train = flatten([split for split in y_split if split is not y_hold])
 
-            # LIBSVM options:
-            # -c <cost  parameter>
-            # -g <gamma parameter>
-            # -q suppress output
-            options = "-c {0} -g {1} -q".format(c, gamma)
-            model = svm_train(y_train, x_train, options)
-            predicted_labels, _, _ = svm_predict(y_hold, x_hold, model)
+        #     # LIBSVM options:
+        #     # -c <cost  parameter>
+        #     # -g <gamma parameter>
+        #     # -q suppress output
+        #     options = "-c {0} -g {1} -q".format(c, gamma)
+        #     model = svm_train(y_train, x_train, options)
+        #     predicted_labels, _, _ = svm_predict(y_hold, x_hold, model)
 
-            # compute number of incorrect labels
-            num_wrong = 0
-            for i, label in enumerate(y_hold):
-                if label != predicted_labels[i]:
-                    num_wrong += 1
+        #     # compute number of incorrect labels
+        #     num_wrong = 0
+        #     for i, label in enumerate(y_hold):
+        #         if label != predicted_labels[i]:
+        #             num_wrong += 1
 
-            avg_accuracy += num_wrong  # keep a running total
+        #     avg_accuracy += num_wrong  # keep a running total
 
-        avg_accuracy /= k  # avg_accuracy is type float
+        # avg_accuracy /= k  # avg_accuracy is type float
 
-        if avg_accuracy > best_accuracy:
-            best_accuracy = avg_accuracy
+        options = "-c {0} -g {1} -v {2} -q".format(c, gamma, k)
+        accuracy = svm_train(y, x, options)
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
             c_best = c
             gamma_best = gamma
 
@@ -130,9 +131,11 @@ def train_svm(name, training_labels, img_feature_dir,
     @return LIBSVM model (also writes model file to output_dir)
     """
     # LIBSVM expects features and labels in separate lists
-    x, y = load_dataset(training_labels, img_feature_dir) 
+    x, y = load_dataset(training_labels, img_feature_dir)
+    # x,y = debug(x,y)  # debug
 
-    c, gamma = cross_validation(y, x)
+    c, gamma = grid_search(y, x)
+
     format_print("Cross validation complete.")
     format_print("C = {0}, gamma = {1}\n".format(c, gamma))
 
@@ -141,7 +144,12 @@ def train_svm(name, training_labels, img_feature_dir,
     # -b 1 -> use probability estimates
     # -q   -> suppress output
     # RBF kernel by default
-    options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
+
+    weights = compute_weights(training_labels)
+    options = "-c {0} -g {1} -b 1 -q {2}".format(c, gamma, weights)
+
+    # options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
+    format_print(options)
     format_print("Training SVM with cross-validation parameters ...")
     model = svm_train(y, x, options)
     format_print("Training complete.")
@@ -169,17 +177,21 @@ def load_dataset(names_to_labels, img_feature_dir):
     return x, y
 
 
-def test(model, test_labels, img_feature_dir):
-    """
-    @param model: LIBSVM model
-    @param test_labels (dict: str -> int)
-    @param img_feature_dir (str)
-    @return list of predicted labels 
-    @return accuracy
-    """
-    x, y = load_dataset(test_labels, img_feature_dir)
-    labels, stats, _ =  svm_predict(y, x, model, '-q')
-    return labels, stats[0]
+# def test(model, test_labels, img_feature_dir):
+#     """
+#     @param model: LIBSVM model
+#     @param test_labels (dict: str -> int)
+#     @param img_feature_dir (str)
+#     @return list of predicted labels
+#     @return accuracy
+#     """
+#     x, y = load_dataset(test_labels, img_feature_dir)
+#     x,y = debug(x,y)  # debug
+#     print y.count(0)
+#     print y.count(1)
+
+#     labels, stats, _ = svm_predict(y, x, model, '-q')
+#     return labels, stats[0]  # accuracy
 
 
 def confusion(expected, actual, percentages=True):
@@ -205,8 +217,38 @@ def confusion(expected, actual, percentages=True):
     # Make entries into percentages
     if percentages:
         for e in xrange(n):
-            mat[e] /= (totals[e] if totals[e] else 1) 
+            mat[e] /= (totals[e] if totals[e] else 1)
             # Distribution of predictions when truth was e
-    
     return mat
 
+
+def compute_weights(training_labels):
+    """Compute weights for SVM based on the number of training data
+
+    @param training_labels (dict)
+
+    @returns weight (string) a counter for the frequency of labels
+    """
+    counter = collections.defaultdict(int)
+    for filename, label in training_labels.iteritems():
+        counter[label] += 1
+
+    for key, value in counter.iteritems():
+        counter[key] = 1 / value ** 0.5
+
+    weights = ''
+    for key, value in counter.iteritems():
+        weights += '-w{0} {1} '.format(key, value)
+    return weights
+
+def debug(x, y):
+    """DEBUG"""
+    x_return = []
+    y_return = []
+    for i, j in zip(x, y):
+        if j == 0:
+            continue
+        else:
+            x_return.append(i)
+            y_return.append(j)
+    return x_return, y_return
