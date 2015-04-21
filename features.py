@@ -70,7 +70,7 @@ def compute_text_feature(metadata, model):
     for word in word_list:
         if word in model:
             text_vector += model[word]
-            text_count += 1
+            text_count += 1.0
 
     text_vector = text_vector / text_count if text_count else text_vector
     return scale(text_vector)
