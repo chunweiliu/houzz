@@ -48,7 +48,6 @@ def compute_text_feature(metadata, model):
     Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
-
     @return normed feature vector
     """
 
@@ -81,7 +80,7 @@ def scale(vector):
     Map each element in the feature to the range [-1, 1].
 
     @param vector (ndarray)
-    @returns (ndarray) scaled feature
+    @return (ndarray) scaled feature
     """
     # Divide by the element with the largest absolute value
     normalizer = max(abs(vector.max()), abs(vector.min()))
