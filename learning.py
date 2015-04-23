@@ -2,9 +2,8 @@
 Subroutines for training the SVM.
 """
 import houzz
-import random
 import numpy
-from svmutil import *
+from liblinearutil import *
 import collections
 
 from features import *
@@ -34,74 +33,23 @@ def grid_search(y, x, k=5):
     """
 
     # Recommended grids from LIBSVM guide
-    c_grid     = [2**i for i in xrange(-5, 15, 2)]
-    gamma_grid = [2**i for i in xrange(-15, 3, 2)]
+    c_grid = [2**i for i in xrange(-5, 15, 2)]
 
     best_accuracy = 0.0
-    for c, gamma in zip(c_grid, gamma_grid):
-        # avg_accuracy = 0.0
-        # for i in xrange(k):
+    for c in c_grid:
 
-        #     format_print("Cross-validating with held-out set {0}, "
-        #                  "c = {1}, gamma = {2}.".format(i, c, gamma))
-
-        #     x_hold = x_split[i]
-        #     y_hold = y_split[i]
-
-        #     x_train = flatten([split for split in x_split if split is not x_hold])
-        #     y_train = flatten([split for split in y_split if split is not y_hold])
-
-        #     # LIBSVM options:
-        #     # -c <cost  parameter>
-        #     # -g <gamma parameter>
-        #     # -q suppress output
-        #     options = "-c {0} -g {1} -q".format(c, gamma)
-        #     model = svm_train(y_train, x_train, options)
-        #     predicted_labels, _, _ = svm_predict(y_hold, x_hold, model)
-
-        #     # compute number of incorrect labels
-        #     num_wrong = 0
-        #     for i, label in enumerate(y_hold):
-        #         if label != predicted_labels[i]:
-        #             num_wrong += 1
-
-        #     avg_accuracy += num_wrong  # keep a running total
-
-        # avg_accuracy /= k  # avg_accuracy is type float
-
-        options = "-c {0} -g {1} -v {2} -q".format(c, gamma, k)
-        accuracy = svm_train(y, x, options)
+        options = "-c {0} -v {1} -q".format(c, k)
+        accuracy = train(y, x, options)
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             c_best = c
-            gamma_best = gamma
 
     format_print(
-    """Cross-validation finished!
-        c = {0}
-        gamma = {1}
-        best accuracy = {2}""".format(c, gamma, best_accuracy)
+        """Cross-validation finished!
+           c = {0}
+           best accuracy = {1}""".format(c, best_accuracy)
     )
-    return c_best, gamma_best
-
-
-def split_data(x, y, k):
-    # k splits
-    x_split = [[] for i in range(k)]
-    y_split = [[] for i in range(k)]
-    # Why not [[]]*k ?
-    # It reuses the same reference for [] each time!
-
-    # Randomly permute indices and count off 0, 1, ..., k-1
-    # assert len(y) == len(x)
-    indices = range(len(y))
-    random.shuffle(indices)
-    for i in xrange(len(y)):
-        fold_number = i % k  # cycles through 0, 1, ..., k-1
-        x_split[fold_number].append(x[indices[i]])
-        y_split[fold_number].append(y[indices[i]])
-
-    return x_split, y_split
+    return c_best
 
 
 def flatten(list_of_lists):
@@ -116,8 +64,9 @@ def flatten(list_of_lists):
 
 
 def train_svm(name, training_labels, img_feature_dir,
-              text_feature_dir=houzz.DATASET_ROOT + 'text_features',
-              output_dir=houzz.TRAINED_PATH):
+              txt_feature_dir=houzz.DATASET_ROOT + 'text_features',
+              output_dir=houzz.TRAINED_PATH,
+              load_img=True, load_txt=True):
     """
     Train an SVM for each attribute.
     Use 5-fold cross-validation, RBF Kernel.
@@ -131,39 +80,48 @@ def train_svm(name, training_labels, img_feature_dir,
     @return LIBSVM model (also writes model file to output_dir)
     """
     # LIBSVM expects features and labels in separate lists
-    x, y = load_dataset(training_labels, img_feature_dir)
-    # x,y = debug(x,y)  # debug
+    x, y = load_dataset(training_labels, img_feature_dir, txt_feature_dir,
+                        load_img, load_txt)
 
-    c, gamma = grid_search(y, x)
+    if load_img and load_txt:
+        scale_factor = find_scale_factor(x)
+        x = scale(x, scale_factor)
+    else:
+        scale_factor = None
+
+    x = x.tolist()
+    y = y.tolist()
+    c = grid_search(y, x)
 
     format_print("Cross validation complete.")
-    format_print("C = {0}, gamma = {1}\n".format(c, gamma))
+    format_print("C = {0}\n".format(c))
 
-    # Using the values of 'C' and 'gamma' we got from cross-validation,
+    # Using the values of 'C' we got from grid-search
     # re-train on the data set.
     # -b 1 -> use probability estimates
     # -q   -> suppress output
-    # RBF kernel by default
 
     weights = compute_weights(training_labels)
-    options = "-c {0} -g {1} -b 1 -q {2}".format(c, gamma, weights)
+    # weights = ''  # if using blance_partition
+    options = "-c {0} -q {1}".format(c, weights)
 
-    # options = "-c {0} -g {1} -b 1 -q".format(c, gamma)
     format_print(options)
     format_print("Training SVM with cross-validation parameters ...")
-    model = svm_train(y, x, options)
+    model = train(y, x, options)
     format_print("Training complete.")
 
     # Save model for the future
     model_name = name + '.model' if not name.endswith('.model') else name
-    format_print("Saving model to " + houzz.TRAINED_PATH + model_name + " ...")
-    svm_save_model(houzz.TRAINED_PATH + model_name, model)
+    model_path = output_dir + '/' + model_name
+    format_print("Saving model to " + model_path + " ...")
+    save_model(model_path, model)
     format_print("Done.")
 
-    return model
+    return model, scale_factor
 
 
-def load_dataset(names_to_labels, img_feature_dir):
+def load_dataset(names_to_labels, img_feature_dir, txt_feature_dir,
+                 load_img=True, load_txt=True):
     """
     @param names_to_labels (dict: str -> int)
     @param img_feature_dir (str)
@@ -172,26 +130,10 @@ def load_dataset(names_to_labels, img_feature_dir):
     """
     x, y = [], []
     for stem in names_to_labels.keys():
-        x.append(feature(stem, img_feature_dir))
+        x.append(feature(stem, img_feature_dir, txt_feature_dir,
+                         load_img, load_txt))
         y.append(names_to_labels[stem])
-    return x, y
-
-
-# def test(model, test_labels, img_feature_dir):
-#     """
-#     @param model: LIBSVM model
-#     @param test_labels (dict: str -> int)
-#     @param img_feature_dir (str)
-#     @return list of predicted labels
-#     @return accuracy
-#     """
-#     x, y = load_dataset(test_labels, img_feature_dir)
-#     x,y = debug(x,y)  # debug
-#     print y.count(0)
-#     print y.count(1)
-
-#     labels, stats, _ = svm_predict(y, x, model, '-q')
-#     return labels, stats[0]  # accuracy
+    return np.array(x), np.array(y)
 
 
 def confusion(expected, actual, percentages=True):
@@ -233,8 +175,8 @@ def compute_weights(training_labels):
     for filename, label in training_labels.iteritems():
         counter[label] += 1
 
-    for key, value in counter.iteritems():
-        counter[key] = 1 / value ** 0.5
+    for label, num_items in counter.iteritems():
+        counter[label] = 1 / float(num_items) ** 0.5
 
     weights = ''
     for key, value in counter.iteritems():
@@ -252,3 +194,23 @@ def debug(x, y):
             x_return.append(i)
             y_return.append(j)
     return x_return, y_return
+
+
+def find_scale_factor(data):
+    """Find the scale factor of the training dataset
+
+    @param data (list of list) the feature matrix from training data
+
+    @return sf (double) the scale factor that scales the training data set
+    to [-1, 1]
+    """
+    normalizer = max(abs(data.max()), abs(data.min()))
+    return float(normalizer) if normalizer > 10e-9 else 1  # don't scale
+
+
+def scale(data, normalizer):
+    """Scale a list of list base on the normalizer
+
+    @param data
+    """
+    return data / normalizer

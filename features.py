@@ -72,7 +72,7 @@ def compute_text_feature(metadata, model):
             text_count += 1.0
 
     text_vector = text_vector / text_count if text_count else text_vector
-    return scale(text_vector)
+    return text_vector
 
 
 def scale(vector):
@@ -80,7 +80,7 @@ def scale(vector):
     Map each element in the feature to the range [-1, 1].
 
     @param vector (ndarray)
-    @return (ndarray) scaled feature
+    @returns (ndarray) scaled feature
     """
     # Divide by the element with the largest absolute value
     normalizer = max(abs(vector.max()), abs(vector.min()))
@@ -130,8 +130,8 @@ def image_feature(text_file, lmdb_folder, output_folder):
         for key, value in lmdb_cursor:
             datum.ParseFromString(value)
 
-            # Load the extracted feature and scale to [-1, 1]
-            data = scale(caffe.io.datum_to_array(datum))
+            # Load the extracted feature
+            data = caffe.io.datum_to_array(datum)
             # Filename with .npy extension
             filename = f.readline().split()[0]
             output_file = output_folder + filename.rstrip('.jpg') + '.npy'
@@ -139,7 +139,7 @@ def image_feature(text_file, lmdb_folder, output_folder):
             np.save(output_file, data)
 
 
-def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
+def feature(filename, img_dir, txt_dir, load_img=True, load_txt=True):
     """
     Compute the combined feature for the data item.
 
@@ -161,4 +161,10 @@ def feature(filename, img_dir, txt_dir=houzz.DATASET_ROOT + 'text_features'):
     txt = np.load(txt_dir + filename + '.npy')
 
     # Concatenate
-    return np.concatenate((img.flatten(), txt.flatten())).tolist()
+    # return np.concatenate((img.flatten(), txt.flatten())).tolist()  # list
+    if load_img and load_txt:
+        return np.concatenate((img.flatten(), txt.flatten()))  # array
+    elif load_txt:
+        return txt.flatten()
+    else:
+        return img.flatten()
