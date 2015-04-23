@@ -18,6 +18,7 @@ def main(load_img, load_txt, n_test, n_train):
     output_dir = '/home/chunwei/Data/houzz/trained_svms'
 
     # (train_labels, test_labels) = partition(test_fraction=10, stop=stop)
+
     (train_labels, test_labels) = balance_partition(n_test, n_train)
     _, scale_factor = train_svm(model_name, train_labels,
                                 img_feature_dir, txt_feature_dir,
