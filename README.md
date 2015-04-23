@@ -22,7 +22,7 @@ The content is categorized by the type of the room, e.g. bedroom, home-office, o
 * [LIBSVM](http://www.csie.ntu.edu.tw/~cjlin/libsvm/)
 
 Python 2.7, SciPy, NumPy, and NLTK are all included in the 
-[Anaconda] http://continuum.io/downloads
+[Anaconda](http://continuum.io/downloads)
 distribution of Python.
 
 
