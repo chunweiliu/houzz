@@ -176,12 +176,16 @@ def balance_partition(n_test, n_train, file_list='bedroom.txt'):
     test = dict()
     for i in range(n_test):
         label = LABELS[i % len(LABELS)]
-        test[iterbins[label].next()] = i % len(LABELS)
+        next_item = next(iterbins[label], None)
+        if next_item:
+            test[next_item] = i % len(LABELS)
 
     train = dict()
     for i in range(n_test, n_test + n_train):
         label = LABELS[i % len(LABELS)]
-        train[iterbins[label].next()] = i % len(LABELS)
+        next_item = next(iterbins[label], None)
+        if next_item:
+            train[next_item] = i % len(LABELS)
 
     return (train, test)
 

@@ -101,8 +101,8 @@ def train_svm(name, training_labels, img_feature_dir,
     # -b 1 -> use probability estimates
     # -q   -> suppress output
 
-    # weights = compute_weights(training_labels)
-    weights = ''  # if using blance_partition
+    weights = compute_weights(training_labels)
+    # weights = ''  # if using blance_partition
     options = "-c {0} -q {1}".format(c, weights)
 
     format_print(options)
