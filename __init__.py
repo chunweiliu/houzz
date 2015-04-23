@@ -1,3 +1,5 @@
+import collections
+
 import scipy.io
 import gensim
 
@@ -7,7 +9,7 @@ from format_print import format_print
 # End with trailing '/'
 DATASET_ROOT = '/home/chunwei/Data/houzz/'
 # Where the program will look for and save trained SVMs
-TRAINED_PATH = DATASET_ROOT + 'trained_svms/'
+TRAINED_PATH = DATASET_ROOT + 'trained_svms'
 
 # List of labels in our closed world
 LABELS = ["traditional",
@@ -118,34 +120,70 @@ class Houzz:
             return self.mat_data_folder + '/' + filename
 
 
-def partition(file_list='bedroom.txt', test_fraction=10, stop=None):
+def partition(file_list='bedroom.txt'):
     """
     Partitions the dataset into training and test sets.
+    Test sets should have equal labels in every classes.
 
-    @param file_list (str)
+    @param file_list
         a text file in the format expected by Caffe.
         <xxxx.jpg> <int>
-    @param test_fraction (int)
-        Test set composed of (1/test_fraction) of the dataset.
-    @param stop (int)
-        Halt partitioning after this number of dataset items.
-        If set to 'None,' the entire dataset will be partitioned.
     """
+
+    TEST_FRACTION = 10  # 1 / TEST_FRACTION for test set
 
     train = dict()
     test = dict()
     with open(file_list) as f:
         for i, line in enumerate(f):
-            if i == stop:
-                break
             filename = line.split()[0].rstrip('.jpg')
             label = int(line.split()[1])
-            if i % test_fraction == 0:
+            if i % TEST_FRACTION == 0:
                 test[filename] = label
             else:
                 train[filename] = label
     return (train, test)
 
+
+def balance_partition(n_test, n_train, file_list='bedroom.txt'):
+    """
+    Partitions the datatset into training and test sets.
+    The test set has balance numbers of sample in each class.
+
+    @param n_test (int)
+        number of test data
+
+    @param n_train (int)
+        number of training data
+
+    @param file_list
+        a text file in the format expected by Caffe.
+        <xxxx.jpg> <int>
+    """
+    # Save each file in different bins
+    bins = collections.defaultdict(list)
+    with open(file_list) as f:
+        for line in f:
+            filename = line.split()[0].rstrip('.jpg')
+            label = int(line.split()[1])
+            bins[LABELS[label]].append(filename)
+
+    # Instantiate iterators for each bins
+    iterbins = dict()
+    for key in bins:
+        iterbins[key] = iter(bins[key])
+
+    test = dict()
+    for i in range(n_test):
+        label = LABELS[i % len(LABELS)]
+        test[iterbins[label].next()] = i % len(LABELS)
+
+    train = dict()
+    for i in range(n_test, n_test + n_train):
+        label = LABELS[i % len(LABELS)]
+        train[iterbins[label].next()] = i % len(LABELS)
+
+    return (train, test)
 
 """
 When this module is loaded, ensure that 'bedroom.txt' is

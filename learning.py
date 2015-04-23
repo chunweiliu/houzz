@@ -64,8 +64,9 @@ def flatten(list_of_lists):
 
 
 def train_svm(name, training_labels, img_feature_dir,
-              text_feature_dir=houzz.DATASET_ROOT + 'text_features',
-              output_dir=houzz.TRAINED_PATH):
+              txt_feature_dir=houzz.DATASET_ROOT + 'text_features',
+              output_dir=houzz.TRAINED_PATH,
+              load_img=True, load_txt=True):
     """
     Train an SVM for each attribute.
     Use 5-fold cross-validation, RBF Kernel.
@@ -79,20 +80,29 @@ def train_svm(name, training_labels, img_feature_dir,
     @return LIBSVM model (also writes model file to output_dir)
     """
     # LIBSVM expects features and labels in separate lists
-    x, y = load_dataset(training_labels, img_feature_dir)
-    # x,y = debug(x,y)  # debug
+    x, y = load_dataset(training_labels, img_feature_dir, txt_feature_dir,
+                        load_img, load_txt)
 
+    if load_img and load_txt:
+        scale_factor = find_scale_factor(x)
+        x = scale(x, scale_factor)
+    else:
+        scale_factor = None
+
+    x = x.tolist()
+    y = y.tolist()
     c = grid_search(y, x)
 
     format_print("Cross validation complete.")
     format_print("C = {0}\n".format(c))
 
-    # Using the values of 'C' and 'gamma' we got from cross-validation,
+    # Using the values of 'C' we got from grid-search
     # re-train on the data set.
     # -b 1 -> use probability estimates
     # -q   -> suppress output
-    # RBF kernel by default
-    weights = compute_weights(training_labels)
+
+    # weights = compute_weights(training_labels)
+    weights = ''  # if using blance_partition
     options = "-c {0} -q {1}".format(c, weights)
 
     format_print(options)
@@ -102,14 +112,16 @@ def train_svm(name, training_labels, img_feature_dir,
 
     # Save model for the future
     model_name = name + '.model' if not name.endswith('.model') else name
-    format_print("Saving model to " + houzz.TRAINED_PATH + model_name + " ...")
-    save_model(houzz.TRAINED_PATH + model_name, model)
+    model_path = output_dir + '/' + model_name
+    format_print("Saving model to " + model_path + " ...")
+    save_model(model_path, model)
     format_print("Done.")
 
-    return model
+    return model, scale_factor
 
 
-def load_dataset(names_to_labels, img_feature_dir):
+def load_dataset(names_to_labels, img_feature_dir, txt_feature_dir,
+                 load_img=True, load_txt=True):
     """
     @param names_to_labels (dict: str -> int)
     @param img_feature_dir (str)
@@ -118,9 +130,10 @@ def load_dataset(names_to_labels, img_feature_dir):
     """
     x, y = [], []
     for stem in names_to_labels.keys():
-        x.append(feature(stem, img_feature_dir))
+        x.append(feature(stem, img_feature_dir, txt_feature_dir,
+                         load_img, load_txt))
         y.append(names_to_labels[stem])
-    return x, y
+    return np.array(x), np.array(y)
 
 
 def confusion(expected, actual, percentages=True):
@@ -162,8 +175,8 @@ def compute_weights(training_labels):
     for filename, label in training_labels.iteritems():
         counter[label] += 1
 
-    for key, value in counter.iteritems():
-        counter[key] = 1 / value ** 0.5
+    for label, num_items in counter.iteritems():
+        counter[label] = 1 / float(num_items) ** 0.5
 
     weights = ''
     for key, value in counter.iteritems():
@@ -181,3 +194,23 @@ def debug(x, y):
             x_return.append(i)
             y_return.append(j)
     return x_return, y_return
+
+
+def find_scale_factor(data):
+    """Find the scale factor of the training dataset
+
+    @param data (list of list) the feature matrix from training data
+
+    @return sf (double) the scale factor that scales the training data set
+    to [-1, 1]
+    """
+    normalizer = max(abs(data.max()), abs(data.min()))
+    return float(normalizer) if normalizer > 10e-9 else 1  # don't scale
+
+
+def scale(data, normalizer):
+    """Scale a list of list base on the normalizer
+
+    @param data
+    """
+    return data / normalizer
