@@ -1,11 +1,13 @@
 """
 Subroutines for training the SVM.
 """
-import houzz
 import numpy
-from liblinearutil import *
 import collections
+from matplotlib import mlab
 
+from liblinearutil import *
+
+import houzz
 from features import *
 from format_print import format_print
 
@@ -80,18 +82,21 @@ def train_svm(name, training_labels, img_feature_dir,
     @return LIBSVM model (also writes model file to output_dir)
     """
     # LIBSVM expects features and labels in separate lists
-    x, y = load_dataset(training_labels, img_feature_dir, txt_feature_dir,
-                        load_img, load_txt)
+    x, y, img_sf, txt_sf = load_dataset(training_labels, img_feature_dir,
+                                        txt_feature_dir, load_img, load_txt)
 
-    if load_img and load_txt:
-        scale_factor = find_scale_factor(x)
-        x = scale(x, scale_factor)
-    else:
-        scale_factor = None
+    # PCA
+    pca = mlab.PCA(x)
+    pca.K = 1024
+    x = pca.Y[:, :pca.K]  # data x projected on the priciple plane
+    y = y[:pca.K]
+
+    # scale
 
     x = x.tolist()
     y = y.tolist()
     c = grid_search(y, x)
+    # c = 8192
 
     format_print("Cross validation complete.")
     format_print("C = {0}\n".format(c))
@@ -117,23 +122,7 @@ def train_svm(name, training_labels, img_feature_dir,
     save_model(model_path, model)
     format_print("Done.")
 
-    return model, scale_factor
-
-
-def load_dataset(names_to_labels, img_feature_dir, txt_feature_dir,
-                 load_img=True, load_txt=True):
-    """
-    @param names_to_labels (dict: str -> int)
-    @param img_feature_dir (str)
-    @return list of features
-    @return list of labels (same order as list of features)
-    """
-    x, y = [], []
-    for stem in names_to_labels.keys():
-        x.append(feature(stem, img_feature_dir, txt_feature_dir,
-                         load_img, load_txt))
-        y.append(names_to_labels[stem])
-    return np.array(x), np.array(y)
+    return model, img_sf, txt_sf, pca
 
 
 def confusion(expected, actual, percentages=True):
@@ -183,6 +172,7 @@ def compute_weights(training_labels):
         weights += '-w{0} {1} '.format(key, value)
     return weights
 
+
 def debug(x, y):
     """DEBUG"""
     x_return = []
@@ -194,23 +184,3 @@ def debug(x, y):
             x_return.append(i)
             y_return.append(j)
     return x_return, y_return
-
-
-def find_scale_factor(data):
-    """Find the scale factor of the training dataset
-
-    @param data (list of list) the feature matrix from training data
-
-    @return sf (double) the scale factor that scales the training data set
-    to [-1, 1]
-    """
-    normalizer = max(abs(data.max()), abs(data.min()))
-    return float(normalizer) if normalizer > 10e-9 else 1  # don't scale
-
-
-def scale(data, normalizer):
-    """Scale a list of list base on the normalizer
-
-    @param data
-    """
-    return data / normalizer

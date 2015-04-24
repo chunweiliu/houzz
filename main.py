@@ -1,11 +1,12 @@
 import sys
+import os.path
+import cPickle
 
 import liblinearutil
 
 from learning import train_svm
 from learning import confusion
 from learning import load_dataset
-from learning import scale
 from houzz import balance_partition
 
 
@@ -15,25 +16,24 @@ def main(load_img, load_txt, n_test, n_train):
         load_img, load_txt, n_test, n_train)
     img_feature_dir = '/home/chunwei/Data/houzz/caffenet_features'
     txt_feature_dir = '/home/chunwei/Data/houzz/text_features'
-    output_dir = '/home/chunwei/Data/houzz/trained_svms'
+    model_root = '/home/chunwei/Data/houzz/trained_svms'
+    # model_file = model_root + '/' + model_name + '.pkl'
 
     # (train_labels, test_labels) = partition(test_fraction=10, stop=stop)
-
     (train_labels, test_labels) = balance_partition(n_test, n_train)
-    _, scale_factor = train_svm(model_name, train_labels,
-                                img_feature_dir, txt_feature_dir,
-                                output_dir,
-                                load_img, load_txt)
+    model, img_sf, txt_sf, pca = \
+        train_svm(model_name, train_labels,
+                  img_feature_dir, txt_feature_dir, model_root,
+                  load_img, load_txt)
 
     # Testing
-    model_root = output_dir
-    model_file = model_root + '/' +model_name + '.model'
-    model = liblinearutil.load_model(model_file)
+    x, y, _, _ = load_dataset(test_labels, img_feature_dir, txt_feature_dir,
+                              load_img, load_txt, img_sf, txt_sf)
 
-    x, y = load_dataset(test_labels, img_feature_dir, txt_feature_dir,
-                        load_img, load_txt)
-    if load_img and load_txt:
-        x = scale(x, scale_factor)
+    # PCA
+    x = pca.project(x)
+    x = x[:, :pca.K]  # data x projected on the priciple plane
+    y = y[:pca.K]
 
     x = x.tolist()
     y = y.tolist()

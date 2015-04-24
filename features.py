@@ -48,6 +48,7 @@ def compute_text_feature(metadata, model):
     Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
+
     @return normed feature vector
     """
 
@@ -75,16 +76,16 @@ def compute_text_feature(metadata, model):
     return text_vector
 
 
-def scale(vector):
-    """
-    Map each element in the feature to the range [-1, 1].
+# def scale(vector):
+#     """
+#     Map each element in the feature to the range [-1, 1].
 
-    @param vector (ndarray)
-    @returns (ndarray) scaled feature
-    """
-    # Divide by the element with the largest absolute value
-    normalizer = max(abs(vector.max()), abs(vector.min()))
-    return vector / normalizer if normalizer else vector
+#     @param vector (ndarray)
+#     @returns (ndarray) scaled feature
+#     """
+#     # Divide by the element with the largest absolute value
+#     normalizer = max(abs(vector.max()), abs(vector.min()))
+#     return vector / normalizer if normalizer else vector
 
 
 def process_text(text):
@@ -139,32 +140,93 @@ def image_feature(text_file, lmdb_folder, output_folder):
             np.save(output_file, data)
 
 
-def feature(filename, img_dir, txt_dir, load_img=True, load_txt=True):
+def find_scale_factor(data):
+    """Find the scale factor of the training dataset
+
+    @param data (list or ndarray of ndarrays) features from training data
+    @return sf (double) the scale factor that scales the training data set
+    to [-1, 1]
     """
-    Compute the combined feature for the data item.
+    if data is None or not data.any():
+        return None
+
+    normalizer = max(abs(data.max()), abs(data.min()))
+    return float(normalizer) if normalizer > 10e-9 else 1  # don't scale
+
+
+def scale(data, normalizer):
+    """
+    Scale a nested ndarray of features.
+
+    @param data (ndarray)
+    @return (ndarray)
+    """
+    if data is None or not normalizer:
+        return data
+
+    return data / normalizer
+
+
+def load_dataset(names_to_labels, img_dir, txt_dir,
+                 load_img=True, load_txt=True, img_sf=None, txt_sf=None):
+    """
+    Combine individually scaled image and text features for the dataset.
 
     Preconditions:
         1) Image features precomputed and stored in img_dir
         2) Text features precomputed and stored in txt_dir
 
-    @param filename (str): data_xxxx
-    @param img_dir (str): location of image features
-    @param txt_dir (str): location of text features
+    @param names_to_labels (dict: str -> int)
+    @param img_dir (str)
+    @param txt_dir (str)
+    @param load_img (bool): set to use image features
+    @param load_txt (bool): set to use text features
 
-    @return (list) combined img + text feature representation
+    @return list of features
+    @return list of labels (same order as list of features)
+    @return (float): image feature's scale factor
+    @return (float): text feature's scale factor
     """
+
     img_dir = houzz.standardize(img_dir)
     txt_dir = houzz.standardize(txt_dir)
 
-    # Load features from .npy files
-    img = np.load(img_dir + filename + '.npy')
-    txt = np.load(txt_dir + filename + '.npy')
+    img_features = []
+    txt_features = []
 
-    # Concatenate
-    # return np.concatenate((img.flatten(), txt.flatten())).tolist()  # list
-    if load_img and load_txt:
-        return np.concatenate((img.flatten(), txt.flatten()))  # array
-    elif load_txt:
-        return txt.flatten()
-    else:
-        return img.flatten()
+    # Load all image and text features to compute scaling
+    names = names_to_labels.keys()
+    for stem in names:
+        if load_img:
+            img = np.load(img_dir + stem + '.npy').flatten()
+        else:
+            img = np.array([])
+
+        if load_txt:
+            txt = np.load(txt_dir + stem + '.npy').flatten()
+        else:
+            txt = np.array([])
+
+        img_features.append(img)
+        txt_features.append(txt)
+
+    # Turn lists to ndarrays for scaling
+    img_features = np.array(img_features)
+    txt_features = np.array(txt_features)
+
+    # Scale image and text features separately
+    if not img_sf:
+        img_sf = find_scale_factor(img_features)
+    if not txt_sf:
+        txt_sf = find_scale_factor(txt_features)
+
+    img_features = scale(img_features, img_sf)
+    txt_features = scale(txt_features, txt_sf)
+
+    # Concatenate scaled features
+    x, y = [], []
+    for img, txt, stem in zip(img_features, txt_features, names):
+        x.append(np.concatenate((img, txt)))
+        y.append(names_to_labels[stem])
+
+    return np.array(x), np.array(y), img_sf, txt_sf
