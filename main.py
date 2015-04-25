@@ -65,9 +65,10 @@ def main(load_img, load_txt, n_test, n_train, pca_k):
     # Visualize the result
     format_print("Results ...")
     mat = confusion(y, predicted_labels)
-    mat *= 100
     accuracy = stats[0]
+    format_print("Confusion matrix:")
     print mat
+    format_print("Accuracy:")
     print accuracy
 
     plot_confusion_matrix.plot(mat, vis_file)

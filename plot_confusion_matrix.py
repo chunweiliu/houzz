@@ -4,12 +4,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 
-def plot(conf, filename):
-
-    norm_conf = [[0] * len(conf[0]) for i in range(len(conf))]
-    for i in range(len(conf)):
-        for j in range(len(conf[0])):
-            norm_conf[i][j] = round(conf[i][j], 2)
+def plot(norm_conf, filename):
 
     fig = plt.figure()
     plt.clf()

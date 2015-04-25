@@ -150,6 +150,9 @@ def confusion(expected, actual, percentages=True):
         for e in xrange(n):
             mat[e] /= (totals[e] if totals[e] else 1)
             # Distribution of predictions when truth was e
+        mat *= 100.0
+        for e, a in zip(expected, actual):
+            mat[e, a] = round(mat[e, a], 2)
     return mat
 
 
