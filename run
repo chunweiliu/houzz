@@ -1,0 +1,10 @@
+#!/bin/bash
+load_img=$1
+load_txt=$2
+n_test=$3
+n_train=$4
+pca_k=$5
+
+cmd="python main.py $load_img $load_txt $n_test $n_train $pca_k > log/img_${load_img}_txt_${load_txt}_test_${n_test}_train_${n_train}_pca_${pca_k}.log"
+echo $cmd
+$cmd
