@@ -48,11 +48,6 @@ def grid_search(y, x, k=5):
             best_accuracy = accuracy
             c_best = c
 
-    format_print(
-        """Cross-validation finished!
-           c = {0}
-           best accuracy = {1}""".format(c, best_accuracy)
-    )
     return c_best
 
 
