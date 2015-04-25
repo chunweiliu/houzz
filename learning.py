@@ -3,6 +3,8 @@ Subroutines for training the SVM.
 """
 import numpy
 import collections
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import mlab
 
 from liblinearutil import *
@@ -68,7 +70,7 @@ def flatten(list_of_lists):
 def train_svm(name, training_labels, img_feature_dir,
               txt_feature_dir=houzz.DATASET_ROOT + 'text_features',
               output_dir=houzz.TRAINED_PATH,
-              load_img=True, load_txt=True):
+              load_img=True, load_txt=True, pca_k=1024):
     """
     Train an SVM for each attribute.
     Use 5-fold cross-validation, RBF Kernel.
@@ -87,14 +89,12 @@ def train_svm(name, training_labels, img_feature_dir,
 
     # PCA
     pca = mlab.PCA(x)
-    pca.K = 1024
+    pca.K = pca_k
     x = pca.Y[:, :pca.K]  # data x projected on the priciple plane
-    y = y[:pca.K]
-
-    # scale
 
     x = x.tolist()
     y = y.tolist()
+
     c = grid_search(y, x)
     # c = 8192
 

@@ -120,28 +120,33 @@ class Houzz:
             return self.mat_data_folder + '/' + filename
 
 
-def partition(file_list='bedroom.txt'):
+def partition(n_test, n_train, file_list='bedroom.txt'):
     """
     Partitions the dataset into training and test sets.
-    Test sets should have equal labels in every classes.
-
-    @param file_list
+    @param n_test (int)
+        number of test data.
+    @param n_train (int)
+        number of training data.
+    @param file_list (str)
         a text file in the format expected by Caffe.
         <xxxx.jpg> <int>
     """
 
-    TEST_FRACTION = 10  # 1 / TEST_FRACTION for test set
-
     train = dict()
     test = dict()
     with open(file_list) as f:
+        # start with test data
         for i, line in enumerate(f):
-            filename = line.split()[0].rstrip('.jpg')
-            label = int(line.split()[1])
-            if i % TEST_FRACTION == 0:
+            if i < n_test:
+                filename = line.split()[0].rstrip('.jpg')
+                label = int(line.split()[1])
                 test[filename] = label
-            else:
+            elif i < n_test + n_train:
+                filename = line.split()[0].rstrip('.jpg')
+                label = int(line.split()[1])
                 train[filename] = label
+            else:
+                break
     return (train, test)
 
 
