@@ -70,7 +70,7 @@ def flatten(list_of_lists):
 def train_svm(name, training_labels, img_feature_dir,
               txt_feature_dir=houzz.DATASET_ROOT + 'text_features',
               output_dir=houzz.TRAINED_PATH,
-              load_img=True, load_txt=True, pca_k=1024):
+              load_img=True, load_txt=True, pca_k=0):
     """
     Train an SVM for each attribute.
     Use 5-fold cross-validation, RBF Kernel.
@@ -88,15 +88,17 @@ def train_svm(name, training_labels, img_feature_dir,
                                         txt_feature_dir, load_img, load_txt)
 
     # PCA
-    pca = mlab.PCA(x)
-    pca.K = pca_k
-    x = pca.Y[:, :pca.K]  # data x projected on the priciple plane
+    if pca_k:
+        pca = mlab.PCA(x)
+        pca.K = pca_k
+        x = pca.Y[:, :pca.K]  # data x projected on the priciple plane
+    else:
+        pca = None
 
     x = x.tolist()
     y = y.tolist()
 
     c = grid_search(y, x)
-    # c = 8192
 
     format_print("Cross validation complete.")
     format_print("C = {0}\n".format(c))

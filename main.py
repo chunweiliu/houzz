@@ -55,8 +55,9 @@ def main(load_img, load_txt, n_test, n_train, pca_k):
                               load_img, load_txt, img_sf, txt_sf)
 
     # PCA
-    x = pca.project(x)
-    x = x[:, :pca.K]  # data x projected on the priciple plane
+    if pca_k:
+        x = pca.project(x)
+        x = x[:, :pca_k]  # data x projected on the priciple plane
 
     x = x.tolist()
     y = y.tolist()
