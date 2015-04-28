@@ -9,6 +9,9 @@ import numpy
 from scipy import ndimage
 from scipy.misc import imread
 
+import houzz
+import cPickle as pickle
+
 # Standard RGB max values (used by scipy.misc.imread())
 STD_MAX_R = 255.0
 STD_MAX_G = 255.0
@@ -121,17 +124,20 @@ def approx_equals(x, y):
     return True if abs(x - y) < tol else False
 
 
-"""
-Take 'stems' of image filenames, generates the relative pathnames,
-and returns a dict of mapping stems to feature representations (HSVHistogram objects).
+def generate_features(txt_file, img_dir, output_dir):
+    """
+    Compute and pickle HSV color histograms for the images
+    listed in txt_file.
+    """
+    img_dir    = houzz.standardize(img_dir)
+    output_dir = houzz.standardize(output_dir)
+    with open(txt_file, 'r') as dataset:
+        for line in dataset:
+            img_file = line.split()[0]
+            hist = hsv_hist(img_dir + img_file) 
+            pkl = img_file.replace('.jpg', '.pkl')
+            with open(output_dir + pkl) as fd:
+                pickle.dump(hist, fd)
+            format_print("Output written for {}".format(img_file))
 
-@param list of strings of the item names (filename 'stems')
-@return dict of (stem, feature) pairs, one per image 
-        (grayscale images will have 'None' for the feature)
-"""
-def generate_features(dataset_path, stems):
-    feature_reps = {}
-    for stem in stems:
-        filename = dataset_path + 'img_' + stem + '.jpg'
-        feature_reps[stem] = hsv_hist(filename)
-    return feature_reps
+
