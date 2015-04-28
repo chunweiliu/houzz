@@ -142,8 +142,8 @@ def generate_features(txt_file, img_dir, output_dir):
             # transform hist to array
             hist = numpy.array(hist.as_list())
             pkl = img_file.replace('.jpg', '.pkl')
-            with open(output_dir + pkl, 'w') as fd:
-                pickle.dump(hist, fd)
+            numpy.save(pkl, hist)
+
             format_print("Output written for {}".format(img_file))
 
 
