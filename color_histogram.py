@@ -141,8 +141,8 @@ def generate_features(txt_file, img_dir, output_dir):
             hist = hsv_hist(img_dir + img_file)
             # transform hist to array
             hist = numpy.array(hist.as_list())
-            pkl = img_file.replace('.jpg', '.pkl')
-            numpy.save(pkl, hist)
+            npy = img_file.replace('.jpg', '.npy')
+            numpy.save(output_dir + npy, hist)
 
             format_print("Output written for {}".format(img_file))
 
