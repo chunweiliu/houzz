@@ -6,11 +6,11 @@ Brian Cristante
 """
 from colorsys import rgb_to_hsv
 import numpy
-from scipy import ndimage
 from scipy.misc import imread
 
 import houzz
 import cPickle as pickle
+from format_print import format_print
 
 # Standard RGB max values (used by scipy.misc.imread())
 STD_MAX_R = 255.0
@@ -18,20 +18,22 @@ STD_MAX_G = 255.0
 STD_MAX_B = 255.0
 
 # HSV max values, according to colorsys
-MAX_H, MAX_S, MAX_V = 1.0, 1.0, 1.0  
+MAX_H, MAX_S, MAX_V = 1.0, 1.0, 1.0
 
 """
 HSVHistogram
 Data structure for HSV histograms
 
 Methods:
-    - bin(self, h, s, v): 
+    - bin(self, h, s, v):
         add HSV value to the histogram
-    - count(self, h_idx, s_idx, v_idx): 
-        get frequency from a bin 
+    - count(self, h_idx, s_idx, v_idx):
+        get frequency from a bin
     - as_list()
         return the histogram contents as a vector
 """
+
+
 class HSVHistogram(object):
     # Class constants
     NUM_BINS = 10
@@ -57,7 +59,7 @@ class HSVHistogram(object):
         v_idx = self.NUM_BINS-1 if approx_equals(v, MAX_V) else int(v/self.V_BIN_SIZE)
          
         # Add to bin count
-        self.hist[h_idx, s_idx, v_idx] += 1 
+        self.hist[h_idx, s_idx, v_idx] += 1
         self.total += 1
 
     """
@@ -90,25 +92,27 @@ Compute a color histogram representation of an image.
 @return (HSVHistogram): 10-bin HSV color histogram
 @return None if given a grayscale image
 """
+
+
 def hsv_hist(im_filename):
     I = imread(im_filename)   # image as a numpy ndarray
     # Check grayscale
     if len(I.shape) != 3:
         return None
     hist = HSVHistogram()     # create a new histogram
- 
+
     # Bin each pixel in the image
     for row in I:
         for pixel in row:
             r, g, b = pixel
             # Scale to range [0.0, 1.0] expected by colorsys
             r /= STD_MAX_R
-            g /= STD_MAX_G    
-            b /= STD_MAX_B    
+            g /= STD_MAX_G
+            b /= STD_MAX_B
             h, s, v = rgb_to_hsv(r, g, b)
-            
+
             hist.bin(h, s, v)
-    
+
     print("Processed " + im_filename)
     return hist
 
@@ -129,14 +133,16 @@ def generate_features(txt_file, img_dir, output_dir):
     Compute and pickle HSV color histograms for the images
     listed in txt_file.
     """
-    img_dir    = houzz.standardize(img_dir)
+    img_dir = houzz.standardize(img_dir)
     output_dir = houzz.standardize(output_dir)
     with open(txt_file, 'r') as dataset:
         for line in dataset:
             img_file = line.split()[0]
-            hist = hsv_hist(img_dir + img_file) 
+            hist = hsv_hist(img_dir + img_file)
+            # transform hist to array
+            hist = numpy.array(hist.as_list())
             pkl = img_file.replace('.jpg', '.pkl')
-            with open(output_dir + pkl) as fd:
+            with open(output_dir + pkl, 'w') as fd:
                 pickle.dump(hist, fd)
             format_print("Output written for {}".format(img_file))
 
