@@ -1,6 +1,6 @@
 import houzz
 import numpy
-import pyleargist
+import leargist
 from format_print import format_print
 from PIL import Image
 
@@ -15,7 +15,7 @@ def generate_features(txt_file, img_dir, output_dir):
             img_file = line.split()[0]
             # Load image and compute GIST
             im = Image.open(img_dir + img_file)
-            gist = pyleargist.color_gist(im)
+            gist = leargist.color_gist(im)
 
             # Save as .npy
             npy = img_file.replace('.jpg', '.npy')
