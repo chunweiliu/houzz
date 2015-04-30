@@ -47,11 +47,12 @@ class HSVHistogram(object):
         size = (self.NUM_BINS, self.NUM_BINS, self.NUM_BINS)
         self.hist = numpy.zeros(size)
 
-    """
-    Input: HSV value
-    Effect: bins value and updates histogram
-    """
+    
     def bin(self, h, s, v):
+        """
+        @param HSV value
+        Side Effect: bins value and updates histogram
+        """
         # Bin number = floor(val/BIN_SIZE)
         # Max value -> last bin (formula causes out of bounds)
         h_idx = self.NUM_BINS-1 if approx_equals(h, MAX_H) else int(h/self.H_BIN_SIZE) 
@@ -61,22 +62,22 @@ class HSVHistogram(object):
         # Add to bin count
         self.hist[h_idx, s_idx, v_idx] += 1
         self.total += 1
-
-    """
-    Input: bin coordinate in {0, 1, ..., NUM_BINS}
-    Output: normalized count
-    """
+    
     def count(self, h_idx, s_idx, v_idx):
+        """
+        @param bin coordinate in {0, 1, ..., NUM_BINS}
+        @return normalized count
+        """  
         if self.total == 0:
             return 0
         else:
             return self.hist[h_idx, s_idx, v_idx]/self.total
             # hist is an ndarray of floats
-
-    """
-    Output: histogram frequencies as a list
-    """
+    
     def as_list(self):
+        """
+        @return (list): histogram of color frequencies
+        """
         to_return = []
         for i in xrange(0, self.NUM_BINS):
             for j in xrange(0, self.NUM_BINS):
@@ -86,15 +87,14 @@ class HSVHistogram(object):
         return to_return
 
 
-"""
-Compute a color histogram representation of an image.
-@param im_filename (str): image filename
-@return (HSVHistogram): 10-bin HSV color histogram
-@return None if given a grayscale image
-"""
-
-
 def hsv_hist(im_filename):
+    """
+    Compute a color histogram representation of an image.
+
+    @param im_filename (str): image filename
+    @return (HSVHistogram): 10-bin HSV color histogram
+    @return None if given a grayscale image
+    """
     I = imread(im_filename)   # image as a numpy ndarray
     # Check grayscale
     if len(I.shape) != 3:
@@ -117,13 +117,13 @@ def hsv_hist(im_filename):
     return hist
 
 
-"""
-Check floating-point "equality," up to some tolerance.
-
-@param two floating point values, x and y
-@return True or False
-"""
 def approx_equals(x, y):
+    """
+    Check floating-point "equality," up to some tolerance.
+
+    @param two floating point values, x and y
+    @return True or False
+    """
     tol = 10**(-5)
     return True if abs(x - y) < tol else False
 
