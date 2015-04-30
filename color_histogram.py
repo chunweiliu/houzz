@@ -9,7 +9,6 @@ import numpy
 from scipy.misc import imread
 
 import houzz
-import cPickle as pickle
 from format_print import format_print
 
 # Standard RGB max values (used by scipy.misc.imread())
@@ -47,7 +46,6 @@ class HSVHistogram(object):
         size = (self.NUM_BINS, self.NUM_BINS, self.NUM_BINS)
         self.hist = numpy.zeros(size)
 
-    
     def bin(self, h, s, v):
         """
         @param HSV value
@@ -62,18 +60,18 @@ class HSVHistogram(object):
         # Add to bin count
         self.hist[h_idx, s_idx, v_idx] += 1
         self.total += 1
-    
+
     def count(self, h_idx, s_idx, v_idx):
         """
         @param bin coordinate in {0, 1, ..., NUM_BINS}
         @return normalized count
-        """  
+        """
         if self.total == 0:
             return 0
         else:
             return self.hist[h_idx, s_idx, v_idx]/self.total
             # hist is an ndarray of floats
-    
+
     def as_list(self):
         """
         @return (list): histogram of color frequencies
@@ -87,6 +85,15 @@ class HSVHistogram(object):
         return to_return
 
 
+def to_rgb(im):
+    # This should be fsater than 1, as we only
+    # truncate to uint8 once (?)
+    w, h = im.shape
+    ret = numpy.empty((w, h, 3), dtype=numpy.uint8)
+    ret[:, :, 2] = ret[:, :, 1] = ret[:, :, 0] = im
+    return ret
+
+
 def hsv_hist(im_filename):
     """
     Compute a color histogram representation of an image.
@@ -98,7 +105,8 @@ def hsv_hist(im_filename):
     I = imread(im_filename)   # image as a numpy ndarray
     # Check grayscale
     if len(I.shape) != 3:
-        return None
+        I = to_rgb(I)
+
     hist = HSVHistogram()     # create a new histogram
 
     # Bin each pixel in the image
@@ -145,5 +153,4 @@ def generate_features(txt_file, img_dir, output_dir):
             numpy.save(output_dir + npy, hist)
 
             format_print("Output written for {}".format(img_file))
-
 
