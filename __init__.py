@@ -195,13 +195,16 @@ def balance_partition(n_test, n_train, file_list='bedroom.txt'):
     return (train, test)
 
 """
+TODO probably not a good idea
+Severely restricts portability of this module
+
 When this module is loaded, ensure that 'bedroom.txt' is
 in the current directory.
 
 bedroom.txt is a list of only those items that we will use for our task,
 along with their label numbers. This file will be in the format
 expected by Caffe.
-"""
+
 import os
 data_file = "bedroom.txt"
 
@@ -220,3 +223,4 @@ if data_file not in os.listdir('.'):
                 jpg = mat.rstrip('.mat') + '.jpg'
                 label = LABELS.index(data['style'])
                 fd.write(jpg + ' ' + str(label) + '\n')
+"""
