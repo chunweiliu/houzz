@@ -11,6 +11,15 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def fullfile(root, base):
+    """
+    Concatinate path in Unix-style
+    @param root (str): Unix-style path
+    @param base (str): Based name of a unix-style path
+    """
+    return standardize(root) + '/' + base
+
+
 def standardize(path):
     """
     Adds trailing '/' if absent.
@@ -30,7 +39,11 @@ def format_print(text):
 
 
 def plot(norm_conf, filename):
-
+    """
+    Plot the normalized confusion matrix to the filename
+    @param norm_conf (numpy.array): a n by n matrix
+    @param filename (str): path to the output png file
+    """
     fig = plt.figure()
     plt.clf()
     ax = fig.add_subplot(111)
@@ -47,7 +60,7 @@ def plot(norm_conf, filename):
                         horizontalalignment='center',
                         verticalalignment='center')
 
-    cb = fig.colorbar(res)
+    fig.colorbar(res)
     labels = ('trad.', 'cont.', 'ecle.', 'modern',
               'med.', 'tropical', 'asian')
     plt.xticks(range(width), labels)

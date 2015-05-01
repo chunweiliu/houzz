@@ -10,7 +10,9 @@ import numpy as np
 import gensim
 from nltk.corpus import stopwords
 
-from format_print import format_print
+from utilities import format_print
+from utilities import standardize
+
 import houzz
 
 import caffe
@@ -26,11 +28,11 @@ from colorsys import rgb_to_hsv
 from scipy.misc import imread
 
 
-def text_feature(meta_folder, text_model_file, text_folder):
+def text_feature(meta_folder, text_model_file, text_folder, feature_of):
     """Precompute all textual features for the files in the meta_folder."""
 
-    meta_folder = houzz.standardize(meta_folder)
-    text_folder = houzz.standardize(text_folder)
+    meta_folder = standardize(meta_folder)
+    text_folder = standardize(text_folder)
 
     # Load the langauge model
     format_print('Loading the Google News Model ...')
@@ -41,7 +43,8 @@ def text_feature(meta_folder, text_model_file, text_folder):
     for pkl in os.listdir(meta_folder):
         with open(meta_folder + pkl, 'r') as f:
             metadata = pickle.load(f)
-            feature = compute_text_feature(metadata, model)
+            # feature = compute_text_feature(metadata, model)
+            feature = feature_of(metadata, model)
             # Discard empty features
             try:
                 if feature.any() is not False:
@@ -49,6 +52,66 @@ def text_feature(meta_folder, text_model_file, text_folder):
                     np.save(text_folder + npy, feature)
             except AttributeError:
                 pass
+
+
+def compute_tags_feature(metadata, model):
+    """Compute an unified vector to represent the description and tags.
+    Treat each word in the description and tags the same way.
+
+    @param metadata: a metadata dictionary from Houzz.loadmat
+
+    @return normed feature vector
+    """
+
+    if not metadata['tag']:
+        format_print('No tag feature found')
+        return None
+
+    word_list = []
+    if metadata['tag']:
+        for tag in metadata['tag']:
+            word_list += process_text(tag)
+
+    # Combine the word2vec for each individual word
+    text_vector = np.zeros(300, dtype=np.float32)
+    text_count = 0
+    for word in word_list:
+        if word in model:
+            text_vector += model[word]
+            text_count += 1.0
+
+    text_vector = text_vector / text_count if text_count else text_vector
+    return text_vector
+
+
+def compute_description_feature(metadata, model):
+    """Compute an unified vector to represent the description and tags.
+    Treat each word in the description and tags the same way.
+
+    @param metadata: a metadata dictionary from Houzz.loadmat
+
+    @return normed feature vector
+    """
+
+    if not metadata['description']:
+        format_print('No description feature found')
+        return None
+
+    word_list = []
+    if metadata['description']:
+        for word in metadata['description'].split():
+            word_list += process_text(word)
+
+    # Combine the word2vec for each individual word
+    text_vector = np.zeros(300, dtype=np.float32)
+    text_count = 0
+    for word in word_list:
+        if word in model:
+            text_vector += model[word]
+            text_count += 1.0
+
+    text_vector = text_vector / text_count if text_count else text_vector
+    return text_vector
 
 
 def compute_text_feature(metadata, model):
@@ -128,8 +191,8 @@ def image_features(txt_file, img_dir, output_dir, feature_of):
                function that computes the feature representation
                of an image (.jpg)
     """
-    img_dir = houzz.standardize(img_dir)
-    output_dir = houzz.standardize(output_dir)
+    img_dir = standardize(img_dir)
+    output_dir = standardize(output_dir)
     with open(txt_file, 'r') as dataset:
         for line in dataset:
             img_file = line.split()[0]
@@ -223,8 +286,8 @@ def load_dataset(names_to_labels, img_dir, txt_dir,
     @return (float): text feature's scale factor
     """
 
-    img_dir = houzz.standardize(img_dir)
-    txt_dir = houzz.standardize(txt_dir)
+    img_dir = standardize(img_dir)
+    txt_dir = standardize(txt_dir)
 
     img_features = []
     txt_features = []

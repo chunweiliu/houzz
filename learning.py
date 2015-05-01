@@ -62,8 +62,7 @@ def flatten(list_of_lists):
     return flat
 
 
-def train_svm(name, training_labels, img_feature_dir,
-              txt_feature_dir=houzz.DATASET_ROOT + 'text_features',
+def train_svm(name, training_labels, img_feature_dir, txt_feature_dir,
               output_dir=houzz.TRAINED_PATH,
               load_img=True, load_txt=True, pca_k=0):
     """

@@ -3,7 +3,8 @@ import collections
 import scipy.io
 import gensim
 
-from format_print import format_print
+from utilities import format_print
+from utilities import standardize
 
 # Installation: set this to the correct path
 # End with trailing '/'
@@ -19,15 +20,6 @@ LABELS = ["traditional",
           "mediterranean",
           "tropical",
           "asian"]
-
-
-def standardize(path):
-    """
-    Adds trailing '/' if absent.
-    @param path (str): Unix-style path
-    @return std (str): Unix-style path with trailing '/'
-    """
-    return path if path[-1] == '/' else path + '/'
 
 
 class Houzz:
@@ -79,7 +71,7 @@ class Houzz:
          description: [1x134 char]
                style: 'contemporary'
                 type: 'bedroom'
-                 tag: {'built-in-desk'  'guest-room-retreat'  'vaulted-ceilings'}
+                 tag: {'built-in-desk' 'guest-room-retreat' 'vaulted-ceilings'}
             sameproj: {[1x77 char]  [1x83 char]  [1x87 char]}
            recommend: {1x6 cell}
         """
@@ -93,17 +85,24 @@ class Houzz:
         data = dict()
 
         # for string array in matlab
-        data['url'] = py_data.url                          if 'url' in attributes else None
-        data['id'] = py_data.id                            if 'id' in attributes else None
-        data['image_link'] = py_data.image_link            if 'image_link' in attributes else None
-        data['description'] = py_data.description          if 'description' in attributes else None
-        data['style'] = py_data.style                      if 'style' in attributes else None
-        data['type'] = py_data.type                        if 'type' in attributes else None
+        data['url'] = py_data.url if 'url' in attributes else None
+        data['id'] = py_data.id if 'id' in attributes else None
+        data['image_link'] = py_data.image_link \
+            if 'image_link' in attributes else None
+        data['description'] = py_data.description \
+            if 'description' in attributes else None
+        data['style'] = py_data.style \
+            if 'style' in attributes else None
+        data['type'] = py_data.type \
+            if 'type' in attributes else None
 
         # for cell array in Matlab
-        data['tag'] = [x for x in py_data.tag]             if 'tag' in attributes else None
-        data['sameproj'] = [x for x in py_data.sameproj]   if 'sameproj' in attributes else None
-        data['recommend'] = [x for x in py_data.recommend] if 'recommend' in attributes else None
+        data['tag'] = [x for x in py_data.tag] \
+            if 'tag' in attributes else None
+        data['sameproj'] = [x for x in py_data.sameproj] \
+            if 'sameproj' in attributes else None
+        data['recommend'] = [x for x in py_data.recommend] \
+            if 'recommend' in attributes else None
         return data
 
     def check_path(self, filename):
