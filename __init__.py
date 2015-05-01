@@ -3,7 +3,7 @@ import collections
 import scipy.io
 import gensim
 
-from format_print import format_print
+from utilities import format_print
 
 # Installation: set this to the correct path
 # End with trailing '/'

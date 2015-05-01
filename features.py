@@ -10,7 +10,7 @@ import numpy as np
 import gensim
 from nltk.corpus import stopwords
 
-from format_print import format_print
+from utilities import format_print
 import houzz
 
 import caffe

@@ -8,8 +8,8 @@ from learning import train_svm
 from learning import confusion
 from learning import load_dataset
 from houzz import partition
-from format_print import format_print
-import plot_confusion_matrix
+import utilities
+from utilities import format_print
 # from houzz import balance_partition as partition
 
 
@@ -72,7 +72,7 @@ def main(load_img, load_txt, n_test, n_train, pca_k):
     format_print("Accuracy:")
     print accuracy
 
-    plot_confusion_matrix.plot(mat, vis_file)
+    utilities.plot(mat, vis_file)
 
 
 if __name__ == '__main__':
