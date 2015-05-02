@@ -1,5 +1,5 @@
 """
-Subroutines for working with the various feature representations.
+Subroutines for computing and saving features.
 """
 
 import os
@@ -11,6 +11,7 @@ import gensim
 from nltk.corpus import stopwords
 
 from utilities import format_print
+from utilities import standardize
 import houzz
 
 import caffe
@@ -25,12 +26,16 @@ from PIL import Image
 from colorsys import rgb_to_hsv
 from scipy.misc import imread
 
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import mlab
 
-def text_feature(meta_folder, text_model_file, text_folder):
+
+def text_feature(meta_folder, text_model_file, text_folder, feature_of):
     """Precompute all textual features for the files in the meta_folder."""
 
-    meta_folder = houzz.standardize(meta_folder)
-    text_folder = houzz.standardize(text_folder)
+    meta_folder = standardize(meta_folder)
+    text_folder = standardize(text_folder)
 
     # Load the langauge model
     format_print('Loading the Google News Model ...')
@@ -41,7 +46,8 @@ def text_feature(meta_folder, text_model_file, text_folder):
     for pkl in os.listdir(meta_folder):
         with open(meta_folder + pkl, 'r') as f:
             metadata = pickle.load(f)
-            feature = compute_text_feature(metadata, model)
+            # feature = compute_text_feature(metadata, model)
+            feature = feature_of(metadata, model)
             # Discard empty features
             try:
                 if feature.any() is not False:
@@ -49,6 +55,66 @@ def text_feature(meta_folder, text_model_file, text_folder):
                     np.save(text_folder + npy, feature)
             except AttributeError:
                 pass
+
+
+def compute_tags_feature(metadata, model):
+    """Compute an unified vector to represent the description and tags.
+    Treat each word in the description and tags the same way.
+
+    @param metadata: a metadata dictionary from Houzz.loadmat
+
+    @return normed feature vector
+    """
+
+    if not metadata['tag']:
+        format_print('No tag feature found')
+        return None
+
+    word_list = []
+    if metadata['tag']:
+        for tag in metadata['tag']:
+            word_list += process_text(tag)
+
+    # Combine the word2vec for each individual word
+    text_vector = np.zeros(300, dtype=np.float32)
+    text_count = 0
+    for word in word_list:
+        if word in model:
+            text_vector += model[word]
+            text_count += 1.0
+
+    text_vector = text_vector / text_count if text_count else text_vector
+    return text_vector
+
+
+def compute_description_feature(metadata, model):
+    """Compute an unified vector to represent the description and tags.
+    Treat each word in the description and tags the same way.
+
+    @param metadata: a metadata dictionary from Houzz.loadmat
+
+    @return normed feature vector
+    """
+
+    if not metadata['description']:
+        format_print('No description feature found')
+        return None
+
+    word_list = []
+    if metadata['description']:
+        for word in metadata['description'].split():
+            word_list += process_text(word)
+
+    # Combine the word2vec for each individual word
+    text_vector = np.zeros(300, dtype=np.float32)
+    text_count = 0
+    for word in word_list:
+        if word in model:
+            text_vector += model[word]
+            text_count += 1.0
+
+    text_vector = text_vector / text_count if text_count else text_vector
+    return text_vector
 
 
 def compute_text_feature(metadata, model):
@@ -82,6 +148,7 @@ def compute_text_feature(metadata, model):
 
     text_vector = text_vector / text_count if text_count else text_vector
     return text_vector
+
 
 
 def process_text(text):
@@ -128,8 +195,8 @@ def image_features(txt_file, img_dir, output_dir, feature_of):
                function that computes the feature representation
                of an image (.jpg)
     """
-    img_dir = houzz.standardize(img_dir)
-    output_dir = houzz.standardize(output_dir)
+    img_dir = standardize(img_dir)
+    output_dir = standardize(output_dir)
     with open(txt_file, 'r') as dataset:
         for line in dataset:
             img_file = line.split()[0]
@@ -173,98 +240,6 @@ def gist_feature(img_path):
     """
     im = Image.open(img_path)
     return leargist.color_gist(im)
-
-
-def find_scale_factor(data):
-    """Find the scale factor of the training dataset
-
-    @param data (list or ndarray of ndarrays) features from training data
-    @return sf (double) the scale factor that scales the training data set
-    to [-1, 1]
-    """
-    if data is None or not data.any():
-        return None
-
-    normalizer = max(abs(data.max()), abs(data.min()))
-    return float(normalizer) if normalizer > 10e-9 else 1  # don't scale
-
-
-def scale(data, normalizer):
-    """
-    Scale a nested ndarray of features.
-
-    @param data (ndarray)
-    @return (ndarray)
-    """
-    if data is None or not normalizer:
-        return data
-
-    return data / normalizer
-
-
-def load_dataset(names_to_labels, img_dir, txt_dir,
-                 load_img=True, load_txt=True, img_sf=None, txt_sf=None):
-    """
-    Combine individually scaled image and text features for the dataset.
-
-    Preconditions:
-        1) Image features precomputed and stored in img_dir
-        2) Text features precomputed and stored in txt_dir
-
-    @param names_to_labels (dict: str -> int)
-    @param img_dir (str)
-    @param txt_dir (str)
-    @param load_img (bool): set to use image features
-    @param load_txt (bool): set to use text features
-
-    @return list of features
-    @return list of labels (same order as list of features)
-    @return (float): image feature's scale factor
-    @return (float): text feature's scale factor
-    """
-
-    img_dir = houzz.standardize(img_dir)
-    txt_dir = houzz.standardize(txt_dir)
-
-    img_features = []
-    txt_features = []
-
-    # Load all image and text features to compute scaling
-    names = names_to_labels.keys()
-    for stem in names:
-        if load_img:
-            img = np.load(img_dir + stem + '.npy').flatten()
-        else:
-            img = np.array([])
-
-        if load_txt:
-            txt = np.load(txt_dir + stem + '.npy').flatten()
-        else:
-            txt = np.array([])
-
-        img_features.append(img)
-        txt_features.append(txt)
-
-    # Turn lists to ndarrays for scaling
-    img_features = np.array(img_features)
-    txt_features = np.array(txt_features)
-
-    # Scale image and text features separately
-    if not img_sf:
-        img_sf = find_scale_factor(img_features)
-    if not txt_sf:
-        txt_sf = find_scale_factor(txt_features)
-
-    img_features = scale(img_features, img_sf)
-    txt_features = scale(txt_features, txt_sf)
-
-    # Concatenate scaled features
-    x, y = [], []
-    for img, txt, stem in zip(img_features, txt_features, names):
-        x.append(np.concatenate((img, txt)))
-        y.append(names_to_labels[stem])
-
-    return np.array(x), np.array(y), img_sf, txt_sf
 
 
 # Standard RGB max values (used by scipy.misc.imread())
@@ -389,4 +364,3 @@ def approx_equals(x, y):
     """
     tol = 10**(-5)
     return True if abs(x - y) < tol else False
-
