@@ -12,6 +12,7 @@ from nltk.corpus import stopwords
 
 from utilities import format_print
 from utilities import standardize
+from utilities import fullfile
 import houzz
 
 import caffe
@@ -62,7 +63,6 @@ def compute_tags_feature(metadata, model):
     Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
-
     @return normed feature vector
     """
 
@@ -92,7 +92,6 @@ def compute_description_feature(metadata, model):
     Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
-
     @return normed feature vector
     """
 
@@ -122,7 +121,6 @@ def compute_text_feature(metadata, model):
     Treat each word in the description and tags the same way.
 
     @param metadata: a metadata dictionary from Houzz.loadmat
-
     @return normed feature vector
     """
 
@@ -148,7 +146,6 @@ def compute_text_feature(metadata, model):
 
     text_vector = text_vector / text_count if text_count else text_vector
     return text_vector
-
 
 
 def process_text(text):
@@ -240,6 +237,31 @@ def gist_feature(img_path):
     """
     im = Image.open(img_path)
     return leargist.color_gist(im)
+
+
+def hsv_gist_feature(img_path):
+    """
+    Concatenate an HSV histogram and GIST feature.
+    
+    Precondition: 
+    HSV and GIST features precomputed.
+
+    To use in image_features, this function may take only one parameter,
+    the location of the image, even though it relies on the locations
+    of the precomputed features.
+    Set GIST_DIR and HIST_DIR to tell this function where to look
+    for the precomputed features. 
+    """
+    GIST_DIR = standardize(houzz.DATASET_ROOT, 'img/GIST') 
+    HIST_DIR = standardize(houzz.DATASET_ROOT, 'img/HSVH') 
+    
+    # Get the name of the data instance
+    relative_pathname = img_path.split('/')[-1]
+    name = relative_pathname[:-len('.jpg')] + '.npy'
+    
+    gist = np.load(GIST_DIR + name)
+    hist = np.load(HIST_DIR + name)
+    return np.concatenate(gist, hist)
 
 
 # Standard RGB max values (used by scipy.misc.imread())
