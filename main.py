@@ -15,13 +15,13 @@ import utilities
 import learning
 
 # Determine locations of image features
-# IMG_FEATURE_TYPES = ['', 'GIST', 'HSVH', 'HSVG', 'CAFFE']
-IMG_FEATURE_TYPES = ['', 'GIST', 'HSVH']
+IMG_FEATURE_TYPES = ['', 'GIST', 'HSVH', 'HSVG', 'CAFFE']
+# IMG_FEATURE_TYPES = ['', 'GIST', 'HSVH']
 
 
 # Determine locations of text features
-# TXT_FEATURE_TYPES = ['', 'DESC', 'TAGS', 'BOTH']
-TXT_FEATURE_TYPES = ['', 'BOTH']
+TXT_FEATURE_TYPES = ['', 'DESC', 'TAGS', 'BOTH']
+# TXT_FEATURE_TYPES = ['', 'BOTH']
 
 
 def run():
@@ -29,8 +29,8 @@ def run():
     if not os.path.exists(name):
         houzz.create_data_file(name)
 
-    n_train = 2000
-    n_test = 200
+    n_train = 30000
+    n_test = 3461
     pca_k = houzz.Houzz.N_TEXT_FEATURE
     # Get the partition
     train_labels, test_labels = houzz.partition(n_test, n_train)

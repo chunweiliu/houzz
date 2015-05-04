@@ -204,6 +204,6 @@ def create_data_file(name):
                 # Write a line with
                 #   <name>.jpg <label number>
                 # to the file
-                jpg = mat.rstrip('.mat') + '.jpg'
+                jpg = mat[:-len('.mat')] + '.jpg'
                 label = LABELS.index(data['style'])
                 fd.write(jpg + ' ' + str(label) + '\n')

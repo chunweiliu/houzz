@@ -93,7 +93,7 @@ def test(model, meta, test_labels):
     txt_features = scale(txt_features, txt_sf)
 
     # PCA
-    if img_features is not None and img_features.any():
+    if pca and img_features is not None and img_features.any():
         img_features = pca.project(img_features)
         img_features = img_features[:, :pca.k]
 
@@ -212,9 +212,13 @@ def train_svm(training_labels, img_feature_dir=None, txt_feature_dir=None,
 
     # Apply PCA
     if img_features is not None and img_features.any():
-        pca = mlab.PCA(img_features)
-        pca.k = pca_k
-        img_features = pca.Y[:, :pca_k]
+        try:
+            pca = mlab.PCA(img_features)
+            pca.k = pca_k
+            img_features = pca.Y[:, :pca_k]
+        except ValueError:
+            print "Something wrong ..."
+            pca = None
     else:
         pca = None
 
