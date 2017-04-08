@@ -1,3 +1,4 @@
+import os
 import collections
 
 import scipy.io
@@ -193,33 +194,23 @@ def balance_partition(n_test, n_train, file_list='bedroom.txt'):
 
     return (train, test)
 
-"""
-TODO probably not a good idea
-Severely restricts portability of this module
 
-When this module is loaded, ensure that 'bedroom.txt' is
-in the current directory.
-
-bedroom.txt is a list of only those items that we will use for our task,
-along with their label numbers. This file will be in the format
-expected by Caffe.
-
-import os
-data_file = "bedroom.txt"
-
-if data_file not in os.listdir('.'):
-    # Generate this file
+def create_data_file(name):
+    """
+    bedroom.txt is a list of only those items that we will use for our task,
+    along with their label numbers. This file will be in the format
+    expected by Caffe.
+    """
     dataset = Houzz()
-    with open(data_file, 'w') as fd:
+    with open(name, 'w') as fd:
         for mat in os.listdir(dataset.mat_data_folder):
             data = dataset.loadmat(mat)
             # Check if it has a label we want
             if data['style'] in LABELS and \
-               (data['tag'] or data['description']):
+               (data['tag'] and data['description']):
                 # Write a line with
                 #   <name>.jpg <label number>
                 # to the file
-                jpg = mat.rstrip('.mat') + '.jpg'
+                jpg = mat[:-len('.mat')] + '.jpg'
                 label = LABELS.index(data['style'])
                 fd.write(jpg + ' ' + str(label) + '\n')
-"""
